@@ -162,6 +162,17 @@ export default function TicketTypesSettings() {
             )}
           </div>
         ))}
+
+        {/* Botão + no final da lista */}
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex w-full items-center gap-3 rounded-lg border border-dashed border-white/[0.06] px-4 py-3 text-[13px] text-slate-600 transition hover:border-white/[0.12] hover:bg-white/[0.02] hover:text-slate-400"
+          >
+            <Plus size={16} />
+            Adicionar novo tipo de ticket
+          </button>
+        )}
       </div>
 
       {adding && (
