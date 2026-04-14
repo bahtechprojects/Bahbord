@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, Minus, Maximize2, MoreHorizontal, AlertTriangle, ChevronDown } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
-interface SelectItem { id: string; name: string }
+interface SelectItem { id: string; name: string; icon?: string; color?: string; display_name?: string; is_active?: boolean }
 
 interface CreateTicketModalProps {
   services: SelectItem[];
@@ -19,27 +20,95 @@ export interface CreateTicketModalRef {
   open: () => void;
 }
 
+const priorityOptions = [
+  { id: 'urgent', label: 'Urgente', color: '#ef4444' },
+  { id: 'high', label: 'Alta', color: '#f97316' },
+  { id: 'medium', label: 'Média', color: '#eab308' },
+  { id: 'low', label: 'Baixa', color: '#60a5fa' },
+];
+
+const descriptionTemplates: Record<string, string> = {
+  'história': '<p><strong>História de usuário:</strong></p><p></p><p><strong>Critério de aceitação:</strong></p><p></p><p><strong>Observação:</strong></p>',
+  'tarefa': '<p><strong>Descrição da tarefa:</strong></p><p></p><p><strong>Passo a passo:</strong></p>',
+  'bug': '<p><strong>Passos para reproduzir:</strong></p><p></p><p><strong>Comportamento esperado:</strong></p><p></p><p><strong>Comportamento atual:</strong></p>',
+  'epic': '<p><strong>Objetivo:</strong></p><p></p><p><strong>Escopo:</strong></p><p></p><p><strong>Critério de sucesso:</strong></p>',
+};
+
 const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProps>(
-  function CreateTicketModal({ services, statuses, ticketTypes }, ref) {
+  function CreateTicketModal({ services: initialServices, statuses: initialStatuses, ticketTypes: initialTicketTypes }, ref) {
     const router = useRouter();
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
+
+    // Form fields
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [serviceId, setServiceId] = useState(services[0]?.id ?? '');
-    const [statusId, setStatusId] = useState(statuses[0]?.id ?? '');
-    const [ticketTypeId, setTicketTypeId] = useState(ticketTypes[0]?.id ?? '');
+    const [serviceId, setServiceId] = useState('');
+    const [statusId, setStatusId] = useState(initialStatuses[0]?.id ?? '');
+    const [ticketTypeId, setTicketTypeId] = useState(initialTicketTypes[0]?.id ?? '');
     const [priority, setPriority] = useState('medium');
     const [dueDate, setDueDate] = useState('');
+    const [assigneeId, setAssigneeId] = useState('');
+    const [reporterId, setReporterId] = useState('');
+    const [categoryId, setCategoryId] = useState('');
+    const [sprintId, setSprintId] = useState('');
+    const [parentId, setParentId] = useState('');
+    const [createAnother, setCreateAnother] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Options from API
+    const [members, setMembers] = useState<SelectItem[]>([]);
+    const [categories, setCategories] = useState<SelectItem[]>([]);
+    const [sprints, setSprints] = useState<SelectItem[]>([]);
+    const [allServices, setAllServices] = useState<SelectItem[]>(initialServices);
+
     useImperativeHandle(ref, () => ({ open: () => setIsOpen(true) }));
+
+    // Fetch options when modal opens
+    useEffect(() => {
+      if (!isOpen) return;
+      async function load() {
+        try {
+          const [mRes, cRes, sRes, svRes] = await Promise.all([
+            fetch('/api/options?type=members'),
+            fetch('/api/options?type=categories'),
+            fetch('/api/options?type=sprints'),
+            fetch('/api/options?type=services'),
+          ]);
+          if (mRes.ok) setMembers(await mRes.json());
+          if (cRes.ok) setCategories(await cRes.json());
+          if (sRes.ok) setSprints(await sRes.json());
+          if (svRes.ok) setAllServices(await svRes.json());
+        } catch { /* silencioso */ }
+      }
+      load();
+    }, [isOpen]);
+
+    // Set template when type changes
+    const selectedType = initialTicketTypes.find((t) => t.id === ticketTypeId);
+    const typeName = selectedType?.name?.toLowerCase() || 'história';
+
+    function handleTypeChange(newTypeId: string) {
+      setTicketTypeId(newTypeId);
+      const newType = initialTicketTypes.find((t) => t.id === newTypeId);
+      const template = descriptionTemplates[newType?.name?.toLowerCase() || ''] || '';
+      setDescription(template);
+    }
+
+    // Set initial template
+    useEffect(() => {
+      if (isOpen && !description) {
+        const template = descriptionTemplates[typeName] || '';
+        setDescription(template);
+      }
+    }, [isOpen]);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
       event.preventDefault();
       setError('');
       if (!title.trim()) { setError('O resumo do ticket é obrigatório.'); return; }
+      if (!serviceId) { setError('BAH! Serviço/Produto é necessário.'); return; }
 
       setIsSubmitting(true);
       try {
@@ -51,12 +120,12 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
             ticket_type_id: ticketTypeId,
             status_id: statusId,
             service_id: serviceId,
-            assignee_id: null,
-            reporter_id: null,
+            assignee_id: assigneeId || null,
+            reporter_id: reporterId || null,
             title: title.trim(),
             description: description.trim(),
             priority,
-            due_date: dueDate || null
+            due_date: dueDate || null,
           })
         });
 
@@ -66,13 +135,16 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
           return;
         }
 
-        const created = await response.json();
-        toast(`Ticket criado com sucesso`, 'success');
-        setTitle('');
-        setDescription('');
-        setPriority('medium');
-        setDueDate('');
-        setIsOpen(false);
+        toast('Ticket criado com sucesso', 'success');
+
+        if (createAnother) {
+          setTitle('');
+          setDescription(descriptionTemplates[typeName] || '');
+          setError('');
+        } else {
+          resetForm();
+          setIsOpen(false);
+        }
         router.refresh();
       } catch {
         setError('Erro de conexão ao criar ticket.');
@@ -81,18 +153,39 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
       }
     }
 
-    const selectClass = 'w-full rounded-md border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[13px] text-slate-200 outline-none transition focus:border-blue-500/40 focus:bg-white/[0.05]';
+    function resetForm() {
+      setTitle('');
+      setDescription('');
+      setServiceId('');
+      setPriority('medium');
+      setDueDate('');
+      setAssigneeId('');
+      setReporterId('');
+      setCategoryId('');
+      setSprintId('');
+      setParentId('');
+      setError('');
+    }
+
+    const activeSprint = sprints.find((s: any) => s.is_active);
+    const showSprintWarning = sprintId && activeSprint && sprintId === activeSprint.id;
+
+    const modalTitle = `Criar ${selectedType?.name || 'Ticket'}`;
+
+    const selectClass = 'w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[13px] text-slate-200 outline-none transition focus:border-blue-500/40 focus:bg-white/[0.05]';
+    const labelClass = 'mb-1.5 block text-[12px] font-semibold text-slate-400';
+    const requiredDot = <span className="text-red-400 ml-0.5">*</span>;
 
     return (
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            key="modal-overlay"
+            key="create-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[8vh] backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[4vh] backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           >
             <motion.div
@@ -100,98 +193,198 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -8 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="w-full max-w-lg rounded-xl border border-white/[0.08] bg-[#1e2126] shadow-2xl shadow-black/50"
+              className="flex max-h-[92vh] w-full max-w-[720px] flex-col rounded-xl border border-white/[0.08] bg-[#1e2126] shadow-2xl shadow-black/50"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-                <h2 className="text-[14px] font-semibold text-white">Criar ticket</h2>
-                <button onClick={() => setIsOpen(false)} className="rounded-md p-1 text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-300">
-                  <X size={16} />
-                </button>
+              <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-6 py-4">
+                <h2 className="text-[16px] font-semibold text-white">{modalTitle}</h2>
+                <div className="flex items-center gap-1">
+                  <button type="button" className="rounded p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><Minus size={14} /></button>
+                  <button type="button" className="rounded p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><Maximize2 size={14} /></button>
+                  <button type="button" className="rounded p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><MoreHorizontal size={14} /></button>
+                  <button type="button" onClick={() => setIsOpen(false)} className="rounded p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><X size={14} /></button>
+                </div>
               </div>
 
-              {/* Body */}
-              <form className="space-y-4 p-5" onSubmit={handleSubmit}>
-                <div>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-transparent text-[16px] font-semibold text-white outline-none placeholder:text-slate-600"
-                    placeholder="Título do ticket"
-                    autoFocus
-                  />
-                </div>
+              {/* Body — scrollable */}
+              <form className="flex-1 overflow-y-auto" onSubmit={handleSubmit}>
+                <div className="space-y-5 px-6 py-5">
+                  {/* Error banner */}
+                  {error && (
+                    <div className="flex items-center gap-2 rounded-md bg-red-500/10 border border-red-500/20 px-4 py-3">
+                      <AlertTriangle size={16} className="shrink-0 text-red-400" />
+                      <span className="text-[13px] text-red-300">{error}</span>
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Tipo</label>
-                    <select value={ticketTypeId} onChange={(e) => setTicketTypeId(e.target.value)} className={selectClass}>
-                      {ticketTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Serviço</label>
-                    <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className={selectClass}>
-                      {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Prioridade</label>
-                    <select value={priority} onChange={(e) => setPriority(e.target.value)} className={selectClass}>
-                      <option value="urgent">Urgente</option>
-                      <option value="high">Alta</option>
-                      <option value="medium">Média</option>
-                      <option value="low">Baixa</option>
-                    </select>
-                  </div>
-                </div>
+                  <p className="text-[11px] text-slate-500">Os campos obrigatórios estão marcados com asterisco <span className="text-red-400">*</span></p>
 
-                <div className="grid grid-cols-2 gap-3">
+                  {/* Espaço */}
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Status</label>
-                    <select value={statusId} onChange={(e) => setStatusId(e.target.value)} className={selectClass}>
-                      {statuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                    <label className={labelClass}>Espaço {requiredDot}</label>
+                    <div className="flex items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[13px] text-slate-300">
+                      <img src="/logo-bah.svg" alt="" className="h-4 w-4" />
+                      Bah!Company (BAH)
+                    </div>
                   </div>
+
+                  {/* Tipo do ticket */}
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Data limite</label>
+                    <label className={labelClass}>Tipo do ticket {requiredDot}</label>
+                    <div className="flex items-center gap-2">
+                      <TicketTypeIcon typeName={selectedType?.name} size="md" />
+                      <select
+                        value={ticketTypeId}
+                        onChange={(e) => handleTypeChange(e.target.value)}
+                        className={selectClass + ' flex-1'}
+                      >
+                        {initialTicketTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className={labelClass}>Status</label>
+                    <select value={statusId} onChange={(e) => setStatusId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      {initialStatuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    <p className="mt-1 text-[11px] text-slate-600">Este é o status inicial após a criação</p>
+                  </div>
+
+                  {/* Resumo */}
+                  <div>
+                    <label className={labelClass}>Resumo {requiredDot}</label>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full rounded-md border-2 border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[14px] font-medium text-white outline-none transition focus:border-blue-500/60"
+                      placeholder="Resumo do ticket"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Descrição */}
+                  <div>
+                    <label className={labelClass}>Descrição</label>
+                    <RichTextEditor
+                      content={description}
+                      onChange={setDescription}
+                      placeholder="Adicione detalhes..."
+                    />
+                  </div>
+
+                  {/* Data limite */}
+                  <div>
+                    <label className={labelClass}>Data limite</label>
                     <input
                       type="date"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
-                      className={selectClass}
+                      className={selectClass + ' max-w-xs'}
                     />
+                  </div>
+
+                  {/* Responsável */}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className={labelClass}>Responsável</label>
+                      <button type="button" className="text-[11px] text-blue-400 hover:text-blue-300">Atribuir a mim</button>
+                    </div>
+                    <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className={selectClass}>
+                      <option value="">Automático</option>
+                      {members.map((m) => <option key={m.id} value={m.id}>{m.display_name || m.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* BAH! Serviço/Produto */}
+                  <div>
+                    <label className={labelClass}>BAH! Serviço/Produto {requiredDot}</label>
+                    <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      <option value="">Select...</option>
+                      {allServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Pai */}
+                  <div>
+                    <label className={labelClass}>Pai</label>
+                    <select value={parentId} onChange={(e) => setParentId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      <option value="">Selecionar pai</option>
+                    </select>
+                    <p className="mt-1 text-[11px] text-slate-600">Sua hierarquia de tipos do ticket determina os tickets que você pode selecionar aqui.</p>
+                  </div>
+
+                  {/* Categorias */}
+                  <div>
+                    <label className={labelClass}>Categorias</label>
+                    <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      <option value="">Selecionar categoria</option>
+                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Sprint */}
+                  <div>
+                    <label className={labelClass}>Sprint</label>
+                    <select value={sprintId} onChange={(e) => setSprintId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      <option value="">Nenhum</option>
+                      {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    {showSprintWarning && (
+                      <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2.5">
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
+                        <span className="text-[12px] text-amber-300">A criação desse ticket vai afetar o escopo do sprint ativo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Relator */}
+                  <div>
+                    <label className={labelClass}>Relator {requiredDot}</label>
+                    <select value={reporterId} onChange={(e) => setReporterId(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      <option value="">Selecionar</option>
+                      {members.map((m) => <option key={m.id} value={m.id}>{m.display_name || m.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Prioridade */}
+                  <div>
+                    <label className={labelClass}>Prioridade</label>
+                    <select value={priority} onChange={(e) => setPriority(e.target.value)} className={selectClass + ' max-w-xs'}>
+                      {priorityOptions.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-medium text-slate-500">Descrição</label>
-                  <RichTextEditor
-                    content={description}
-                    onChange={setDescription}
-                    placeholder="Detalhes, critérios e observações..."
-                    minimal
-                  />
-                </div>
-
-                {error && <p className="rounded-md bg-red-500/10 px-3 py-2 text-[12px] text-red-400">{error}</p>}
-
-                <div className="flex items-center gap-2 border-t border-white/[0.06] pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Criando...' : 'Criar ticket'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="rounded-md px-4 py-2 text-[13px] text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200"
-                  >
-                    Cancelar
-                  </button>
+                {/* Footer */}
+                <div className="sticky bottom-0 flex items-center justify-between border-t border-white/[0.06] bg-[#1e2126] px-6 py-4">
+                  <label className="flex items-center gap-2 text-[13px] text-slate-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createAnother}
+                      onChange={(e) => setCreateAnother(e.target.checked)}
+                      className="rounded border-white/[0.1] bg-white/[0.03]"
+                    />
+                    Criar outro
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="rounded-md px-4 py-2 text-[13px] font-medium text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="rounded-md bg-blue-600 px-5 py-2 text-[13px] font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Criando...' : 'Criar'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </motion.div>

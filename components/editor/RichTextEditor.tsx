@@ -28,6 +28,7 @@ export default function RichTextEditor({
   minimal = false,
 }: RichTextEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
