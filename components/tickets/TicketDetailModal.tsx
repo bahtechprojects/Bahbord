@@ -123,11 +123,16 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+        body: JSON.stringify({ [field]: value, _updated_at: ticket?.updated_at }),
       });
       if (res.ok) {
         toast('Atualizado', 'success');
         await fetchTicket();
+      } else if (res.status === 409) {
+        toast('Ticket editado por outro usuário. Recarregando...', 'warning');
+        await fetchTicket();
+      } else {
+        toast('Erro ao atualizar', 'error');
       }
     } catch { toast('Erro ao atualizar', 'error'); }
   }

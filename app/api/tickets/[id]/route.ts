@@ -53,6 +53,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
   const body = await request.json();
   const ticketId = params.id;
+  const expectedUpdatedAt = body._updated_at; // OCC: versão esperada
 
   const allowedFields: Record<string, string> = {
     title: 'title',
@@ -89,12 +90,29 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   sets.push(`updated_at = NOW()`);
   values.push(ticketId);
 
+  // OCC: se _updated_at foi enviado, verifica se ninguém editou desde então
+  let whereClause = `WHERE id = $${idx}`;
+  if (expectedUpdatedAt) {
+    values.push(expectedUpdatedAt);
+    whereClause += ` AND updated_at = $${idx + 1}`;
+  }
+
   const result = await query(
-    `UPDATE tickets SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+    `UPDATE tickets SET ${sets.join(', ')} ${whereClause} RETURNING *`,
     values
   );
 
   if (result.rowCount === 0) {
+    // Verificar se o ticket existe mas foi editado por outro
+    if (expectedUpdatedAt) {
+      const exists = await query(`SELECT updated_at FROM tickets WHERE id = $1`, [ticketId]);
+      if (exists.rowCount && exists.rowCount > 0) {
+        return NextResponse.json(
+          { error: 'Este ticket foi editado por outro usuário. Recarregue a página.', code: 'CONFLICT' },
+          { status: 409 }
+        );
+      }
+    }
     return NextResponse.json({ error: 'Ticket não encontrado' }, { status: 404 });
   }
 

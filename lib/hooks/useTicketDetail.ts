@@ -66,15 +66,20 @@ export function useTicketDetail(ticketId: string) {
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+        body: JSON.stringify({ [field]: value, _updated_at: ticket?.updated_at }),
       });
+      if (res.status === 409) {
+        console.warn('Conflito de edição detectado, recarregando...');
+        await fetchTicket();
+        return;
+      }
       if (res.ok) {
         await fetchTicket();
       }
     } catch (err) {
       console.error('Erro ao atualizar ticket:', err);
     }
-  }, [ticketId, fetchTicket]);
+  }, [ticketId, ticket?.updated_at, fetchTicket]);
 
   return { ticket, loading, updateField, refetch: fetchTicket };
 }
