@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Eye } from 'lucide-react';
+import {
+  Eye, Share2, Maximize2, MoreHorizontal, X as XIcon,
+  ChevronDown, ChevronRight, Plus, Settings2
+} from 'lucide-react';
 import SubtaskList from './SubtaskList';
 import LinkedTickets from './LinkedTickets';
 import ActivityTimeline from './ActivityTimeline';
@@ -12,6 +15,7 @@ import AttachmentList from './AttachmentList';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { DetailSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import { cn } from '@/lib/utils/cn';
 
 interface TicketData {
   id: string;
@@ -61,6 +65,8 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
   const [titleValue, setTitleValue] = useState('');
   const [editingDesc, setEditingDesc] = useState(false);
   const [descValue, setDescValue] = useState('');
+  const [descOpen, setDescOpen] = useState(true);
+  const [activityOpen, setActivityOpen] = useState(true);
   const titleRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -79,7 +85,6 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
-  // Keyboard shortcut: M para focar no campo de comentário
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'm' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA' && document.activeElement?.tagName !== 'SELECT') {
@@ -123,54 +128,54 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
     setEditingDesc(false);
   }
 
-  if (loading) {
-    return <DetailSkeleton />;
-  }
+  if (loading) return <DetailSkeleton />;
 
   if (!ticket) {
     return (
       <div className="flex h-64 flex-col items-center justify-center text-slate-400">
         <p>Ticket não encontrado</p>
-        <Link href="/board" className="mt-2 text-sm text-accent hover:text-blue-400">
-          Voltar ao board
-        </Link>
+        <Link href="/board" className="mt-2 text-sm text-blue-400 hover:text-blue-300">Voltar ao board</Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1100px]">
-      {/* Breadcrumb */}
-      <div className="mb-4 flex items-center gap-2">
-        <Link href="/board" className="flex items-center gap-1 text-xs text-slate-500 transition hover:text-accent">
-          <ArrowLeft size={12} />
-          Board
-        </Link>
-        <span className="text-slate-600">/</span>
-        {ticket.parent_key && (
-          <>
-            <Link href={`/ticket/${ticket.parent_id}`} className="font-mono text-xs text-accent hover:underline">
-              {ticket.parent_key}
-            </Link>
-            <span className="text-slate-600">/</span>
-          </>
-        )}
-        <span className="text-xs text-slate-400">{ticket.ticket_key}</span>
-
-        {/* Viewers placeholder */}
-        <div className="ml-auto flex items-center gap-1 text-xs text-slate-500">
-          <Eye size={13} />
-          <span>-</span>
+    <div className="mx-auto max-w-[1200px]">
+      {/* Top bar — breadcrumb + actions */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[13px]">
+          {ticket.parent_key && (
+            <>
+              <span className="text-sm">{ticket.type_icon}</span>
+              <Link href={`/ticket/${ticket.parent_id}`} className="text-slate-400 hover:text-blue-400 transition">
+                {ticket.parent_key}
+              </Link>
+              <span className="text-slate-600">/</span>
+            </>
+          )}
+          <span className="text-sm">{ticket.type_icon}</span>
+          <span className="text-slate-400">{ticket.ticket_key}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+            <Eye size={14} /> 1
+          </button>
+          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+            <Share2 size={14} />
+          </button>
+          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+            <Maximize2 size={14} />
+          </button>
+          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+            <MoreHorizontal size={14} />
+          </button>
+          <Link href="/board" className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+            <XIcon size={14} />
+          </Link>
         </div>
       </div>
 
-      {/* Header: type icon + key + status */}
-      <div className="mb-2 flex items-center gap-2 text-sm">
-        <span>{ticket.type_icon}</span>
-        <span className="font-mono text-slate-500">{ticket.ticket_key}</span>
-      </div>
-
-      {/* Editable title */}
+      {/* Title */}
       {editingTitle ? (
         <input
           ref={titleRef}
@@ -179,79 +184,110 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
           onChange={(e) => setTitleValue(e.target.value)}
           onBlur={saveTitle}
           onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); }}
-          className="mb-6 w-full rounded border border-accent/40 bg-surface px-2 py-1 text-2xl font-bold text-white outline-none"
+          className="mb-2 w-full rounded bg-transparent px-0 py-1 text-[20px] font-semibold text-white outline-none ring-1 ring-blue-500/40 ring-offset-2 ring-offset-[#1a1c1e]"
         />
       ) : (
         <h1
           onClick={() => setEditingTitle(true)}
-          className="mb-6 cursor-pointer text-2xl font-bold text-white transition hover:text-accent"
-          title="Clique para editar"
+          className="mb-2 cursor-text text-[20px] font-semibold text-white hover:text-slate-200"
         >
           {ticket.title}
         </h1>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
-        {/* Main content - left column */}
-        <div className="space-y-6">
-          {/* Description */}
-          <section className="rounded-lg border border-border/40 bg-surface2 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Descrição</h2>
-              {editingDesc ? (
-                <button
-                  onClick={saveDescription}
-                  className="rounded bg-accent px-3 py-1 text-[11px] font-medium text-white hover:bg-blue-500"
-                >
-                  Salvar
-                </button>
-              ) : (
-                <button
-                  onClick={() => setEditingDesc(true)}
-                  className="rounded px-2 py-0.5 text-[11px] text-slate-500 hover:bg-surface hover:text-slate-300"
-                >
-                  Editar
-                </button>
-              )}
-            </div>
-            {editingDesc ? (
-              <RichTextEditor
-                content={descValue}
-                onChange={setDescValue}
-                placeholder="Adicione uma descrição..."
-              />
-            ) : (
-              <div
-                onClick={() => setEditingDesc(true)}
-                className="prose prose-invert prose-sm max-w-none cursor-pointer text-slate-300 transition hover:text-slate-200"
-                title="Clique para editar"
-              >
-                {ticket.description ? (
-                  <div dangerouslySetInnerHTML={{ __html: ticket.description }} />
+      {/* Action buttons below title */}
+      <div className="mb-5 flex items-center gap-1">
+        <button className="rounded-md border border-white/[0.06] p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+          <Plus size={14} />
+        </button>
+        <button className="rounded-md border border-white/[0.06] p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+          <Settings2 size={14} />
+        </button>
+      </div>
+
+      {/* Two column layout */}
+      <div className="flex gap-6">
+        {/* Left column — content */}
+        <div className="flex-1 min-w-0 space-y-0">
+          {/* Descrição */}
+          <section className="border-b border-white/[0.04] pb-5 mb-5">
+            <button
+              onClick={() => setDescOpen(!descOpen)}
+              className="mb-3 flex items-center gap-1.5 text-[14px] font-semibold text-slate-200"
+            >
+              {descOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              Descrição
+            </button>
+            {descOpen && (
+              <>
+                {editingDesc ? (
+                  <div className="space-y-2">
+                    <RichTextEditor content={descValue} onChange={setDescValue} placeholder="Adicione uma descrição..." />
+                    <div className="flex gap-2">
+                      <button onClick={saveDescription} className="rounded bg-blue-600 px-3 py-1 text-[12px] font-medium text-white hover:bg-blue-500">Salvar</button>
+                      <button onClick={() => setEditingDesc(false)} className="rounded px-3 py-1 text-[12px] text-slate-400 hover:text-slate-200">Cancelar</button>
+                    </div>
+                  </div>
                 ) : (
-                  <p className="italic text-slate-600">Clique para adicionar uma descrição...</p>
+                  <div
+                    onClick={() => setEditingDesc(true)}
+                    className="cursor-text text-[14px] leading-relaxed text-slate-300"
+                  >
+                    {ticket.description ? (
+                      <div dangerouslySetInnerHTML={{ __html: ticket.description }} />
+                    ) : (
+                      <p className="text-slate-600 italic">Clique para adicionar uma descrição...</p>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </section>
 
-          {/* Subtasks */}
-          <SubtaskList ticketId={ticket.id} />
+          {/* Subtarefas */}
+          <section className="border-b border-white/[0.04] pb-5 mb-5">
+            <SubtaskList ticketId={ticket.id} />
+          </section>
 
-          {/* Linked tickets */}
-          <LinkedTickets ticketId={ticket.id} />
+          {/* Tickets vinculados */}
+          <section className="border-b border-white/[0.04] pb-5 mb-5">
+            <LinkedTickets ticketId={ticket.id} />
+          </section>
 
-          {/* Attachments */}
-          <AttachmentList ticketId={ticket.id} />
+          {/* Anexos */}
+          <section className="border-b border-white/[0.04] pb-5 mb-5">
+            <AttachmentList ticketId={ticket.id} />
+          </section>
 
-          {/* Activity timeline with tabs */}
-          <ActivityTimeline ticketId={ticket.id} />
+          {/* Atividade */}
+          <section>
+            <button
+              onClick={() => setActivityOpen(!activityOpen)}
+              className="mb-3 flex items-center gap-1.5 text-[14px] font-semibold text-slate-200"
+            >
+              {activityOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              Atividade
+            </button>
+            {activityOpen && <ActivityTimeline ticketId={ticket.id} />}
+          </section>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
+        {/* Right column — sidebar */}
+        <div className="w-[320px] shrink-0">
           <TicketSidebar ticket={ticket} onUpdate={updateField} />
-          <TimeTracker ticketId={ticket.id} />
+          <div className="mt-4">
+            <TimeTracker ticketId={ticket.id} />
+          </div>
+
+          {/* Footer timestamps */}
+          <div className="mt-6 space-y-1 text-[11px] text-slate-500">
+            <p>Criado {ticket.created_at}</p>
+            <p>Atualizado {ticket.updated_at}</p>
+          </div>
+          <button className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300">
+            <Settings2 size={12} />
+            Configurar
+          </button>
         </div>
       </div>
     </div>

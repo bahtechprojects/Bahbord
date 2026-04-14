@@ -26,62 +26,38 @@ export default function SubtaskList({ ticketId }: SubtaskListProps) {
   }
 
   return (
-    <section className="rounded-lg border border-border/40 bg-surface2 p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Subtarefas {total > 0 && <span className="ml-1 text-slate-400">{doneCount}/{total}</span>}
-        </h2>
-      </div>
+    <div>
+      <h3 className="mb-2 text-[14px] font-semibold text-slate-200">
+        Subtarefas
+        {total > 0 && <span className="ml-1.5 text-[12px] font-normal text-slate-500">{doneCount}/{total}</span>}
+      </h3>
 
-      {/* Progress bar */}
       {total > 0 && (
-        <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full rounded-full bg-success transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="h-full rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
       )}
 
-      {/* Subtask list */}
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {subtasks.map((sub) => (
-          <div
-            key={sub.id}
-            className="group flex items-center gap-2 rounded px-2 py-1.5 transition hover:bg-surface"
-          >
-            <button
-              onClick={() => toggleSubtask(sub.id, !sub.is_completed)}
-              className="shrink-0 text-slate-500 transition hover:text-accent"
-            >
+          <div key={sub.id} className="group flex items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.03]">
+            <button onClick={() => toggleSubtask(sub.id, !sub.is_completed)} className="shrink-0">
               {sub.is_completed ? (
-                <CheckSquare size={16} className="text-success" />
+                <CheckSquare size={16} className="text-emerald-500" />
               ) : (
-                <Square size={16} />
+                <Square size={16} className="text-slate-500 hover:text-blue-400" />
               )}
             </button>
-            <span
-              className={cn(
-                'flex-1 text-sm',
-                sub.is_completed ? 'text-slate-600 line-through' : 'text-slate-300'
-              )}
-            >
+            <span className={cn('flex-1 text-[13px]', sub.is_completed ? 'text-slate-600 line-through' : 'text-slate-300')}>
               {sub.title}
             </span>
-            {sub.assignee_name && (
-              <span className="text-[10px] text-slate-600">{sub.assignee_name}</span>
-            )}
-            <button
-              onClick={() => deleteSubtask(sub.id)}
-              className="shrink-0 opacity-0 transition hover:text-danger group-hover:opacity-100"
-            >
-              <Trash2 size={13} className="text-slate-600 hover:text-danger" />
+            <button onClick={() => deleteSubtask(sub.id)} className="shrink-0 opacity-0 group-hover:opacity-100">
+              <Trash2 size={13} className="text-slate-600 hover:text-red-400" />
             </button>
           </div>
         ))}
       </div>
 
-      {/* Add subtask */}
       {adding ? (
         <form onSubmit={handleAdd} className="mt-2 flex gap-2">
           <input
@@ -90,24 +66,17 @@ export default function SubtaskList({ ticketId }: SubtaskListProps) {
             onChange={(e) => setNewTitle(e.target.value)}
             onBlur={() => { if (!newTitle.trim()) setAdding(false); }}
             placeholder="Título da subtarefa"
-            className="flex-1 rounded border border-border/40 bg-surface px-2.5 py-1.5 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-accent/60"
+            className="flex-1 rounded-md border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-[13px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
           />
-          <button
-            type="submit"
-            className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500"
-          >
+          <button type="submit" className="rounded-md bg-blue-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-blue-500">
             Adicionar
           </button>
         </form>
       ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="mt-2 flex items-center gap-1 text-xs text-slate-500 transition hover:text-accent"
-        >
-          <Plus size={14} />
+        <button onClick={() => setAdding(true)} className="mt-1 text-[13px] text-slate-500 hover:text-blue-400 transition">
           Adicionar subtarefa
         </button>
       )}
-    </section>
+    </div>
   );
 }

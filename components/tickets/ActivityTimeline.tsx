@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Reply, ThumbsUp, Smile, Pencil, MoreHorizontal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useActivityLog } from '@/lib/hooks/useActivityLog';
@@ -23,7 +23,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'all', label: 'Tudo' },
   { key: 'comments', label: 'Comentários' },
   { key: 'history', label: 'Histórico' },
-  { key: 'activity', label: 'Reg. Atividades' },
+  { key: 'activity', label: 'Registro de atividades' },
   { key: 'time_status', label: 'Time in Status' },
 ];
 
@@ -32,7 +32,7 @@ interface ActivityTimelineProps {
 }
 
 export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [activeTab, setActiveTab] = useState<TabKey>('comments');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,8 +70,15 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   }
 
   function timeAgo(dateStr: string) {
+    try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: ptBR }); }
+    catch { return dateStr; }
+  }
+
+  function formatDate(dateStr: string) {
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: ptBR });
+      return new Date(dateStr).toLocaleDateString('pt-BR', {
+        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
     } catch { return dateStr; }
   }
 
@@ -79,13 +86,11 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
     return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
-  // Combinar e ordenar para a aba "Tudo"
   const allItems = [
     ...comments.map((c) => ({ type: 'comment' as const, date: c.created_at, data: c })),
     ...activities.map((a) => ({ type: 'activity' as const, date: a.created_at, data: a })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Calcular time in status
   const statusTimes = activities
     .filter((a) => a.field_name === 'status')
     .reduce<Record<string, number>>((acc, a, idx, arr) => {
@@ -99,17 +104,25 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
 
   function renderComment(c: Comment) {
     return (
-      <div key={c.id} className="flex gap-2.5">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/20 text-[10px] font-bold text-accent">
+      <div key={c.id} className="group flex gap-3 py-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-orange-700 text-[10px] font-bold text-white">
           {getInitials(c.author_name)}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-200">{c.author_name}</span>
-            <span className="text-[10px] text-slate-600">{timeAgo(c.created_at)}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[13px] font-semibold text-slate-200">{c.author_name}</span>
+            <span className="text-[11px] text-slate-500">{formatDate(c.created_at)}</span>
           </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-400">{c.body}</p>
+          <p className="mt-1 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-300">{c.body}</p>
           <CommentReactions commentId={c.id} />
+          {/* Comment actions */}
+          <div className="mt-1.5 flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+            <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Responder"><Reply size={13} /></button>
+            <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Curtir"><ThumbsUp size={13} /></button>
+            <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Reação"><Smile size={13} /></button>
+            <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Editar"><Pencil size={13} /></button>
+            <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Mais"><MoreHorizontal size={13} /></button>
+          </div>
         </div>
       </div>
     );
@@ -117,18 +130,16 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
 
   function renderActivity(a: typeof activities[0]) {
     return (
-      <div key={a.id} className="flex items-start gap-2 text-xs">
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[9px] text-slate-400">
+      <div key={a.id} className="flex items-start gap-3 py-2.5 text-[13px]">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[8px] font-bold text-slate-400">
           {a.actor_name ? getInitials(a.actor_name) : '?'}
         </div>
-        <div className="flex-1">
-          <span className="text-slate-400">
-            {a.actor_name && <span className="font-medium text-slate-300">{a.actor_name}</span>}
-            {' '}alterou <span className="font-medium text-slate-300">{a.field_name}</span>
-            {a.old_value && <> de <span className="line-through text-slate-500">{a.old_value}</span></>}
-            {' '}para <span className="font-medium text-white">{a.new_value}</span>
-          </span>
-          <span className="ml-2 text-[10px] text-slate-600">{timeAgo(a.created_at)}</span>
+        <div className="flex-1 text-slate-400">
+          {a.actor_name && <span className="font-medium text-slate-300">{a.actor_name}</span>}
+          {' '}alterou <span className="font-medium text-slate-300">{a.field_name}</span>
+          {a.old_value && <> de <span className="line-through text-slate-500">{a.old_value}</span></>}
+          {' '}para <span className="font-medium text-white">{a.new_value}</span>
+          <span className="ml-2 text-[11px] text-slate-600">{timeAgo(a.created_at)}</span>
         </div>
       </div>
     );
@@ -142,18 +153,18 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   }
 
   return (
-    <section className="rounded-lg border border-border/40 bg-surface2 p-5">
-      {/* Tabs */}
-      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border/30 pb-2">
+    <div>
+      {/* Tabs — pill style like Jira */}
+      <div className="mb-4 flex items-center gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-medium transition',
+              'rounded-full px-3 py-1 text-[12px] font-medium transition',
               activeTab === tab.key
-                ? 'bg-accent/15 text-accent'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30'
+                : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
             )}
           >
             {tab.label}
@@ -161,8 +172,31 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
         ))}
       </div>
 
+      {/* Comment input + quick reactions */}
+      <div className="mb-4">
+        <div className="flex gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-[10px] font-bold text-white">
+            PV
+          </div>
+          <form onSubmit={handleSubmit} className="flex-1">
+            <input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Adicionar comentário..."
+              className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-[13px] text-slate-200 outline-none placeholder:text-slate-600 transition focus:border-blue-500/30 focus:bg-white/[0.05]"
+            />
+          </form>
+        </div>
+        <div className="mt-2 ml-11">
+          <QuickReactions onReact={(text) => submitComment(text)} />
+        </div>
+        <p className="mt-2 ml-11 text-[11px] text-slate-600">
+          Dica de ouro: aperte <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.5 text-[10px]">M</kbd> para fazer comentários
+        </p>
+      </div>
+
       {/* Content */}
-      <div className="max-h-[500px] space-y-3 overflow-auto">
+      <div className="divide-y divide-white/[0.04]">
         {activeTab === 'all' && allItems.map((item) =>
           item.type === 'comment'
             ? renderComment(item.data as Comment)
@@ -172,64 +206,42 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
         {activeTab === 'comments' && (
           comments.length > 0
             ? comments.map(renderComment)
-            : <p className="text-xs italic text-slate-600">Nenhum comentário.</p>
+            : <p className="py-6 text-center text-[13px] text-slate-600">Nenhum comentário ainda.</p>
         )}
 
         {activeTab === 'history' && (
           activities.filter((a) => a.field_name === 'status' || a.field_name === 'assignee').length > 0
-            ? activities
-                .filter((a) => a.field_name === 'status' || a.field_name === 'assignee')
-                .map(renderActivity)
-            : <p className="text-xs italic text-slate-600">Nenhuma mudança registrada.</p>
+            ? activities.filter((a) => a.field_name === 'status' || a.field_name === 'assignee').map(renderActivity)
+            : <p className="py-6 text-center text-[13px] text-slate-600">Nenhuma mudança registrada.</p>
         )}
 
         {activeTab === 'activity' && (
           activities.length > 0
             ? activities.map(renderActivity)
-            : <p className="text-xs italic text-slate-600">Nenhuma atividade registrada.</p>
+            : <p className="py-6 text-center text-[13px] text-slate-600">Nenhuma atividade registrada.</p>
         )}
 
         {activeTab === 'time_status' && (
           Object.keys(statusTimes).length > 0 ? (
-            <table className="w-full text-xs">
+            <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-border/30">
-                  <th className="pb-1 text-left font-medium text-slate-500">Status</th>
-                  <th className="pb-1 text-right font-medium text-slate-500">Tempo</th>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="py-2 text-left font-medium text-slate-500">Status</th>
+                  <th className="py-2 text-right font-medium text-slate-500">Tempo</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(statusTimes).map(([status, mins]) => (
-                  <tr key={status} className="border-b border-border/20">
-                    <td className="py-1.5 text-slate-300">{status}</td>
-                    <td className="py-1.5 text-right font-medium text-slate-400">{formatMin(mins)}</td>
+                  <tr key={status} className="border-b border-white/[0.04]">
+                    <td className="py-2 text-slate-300">{status}</td>
+                    <td className="py-2 text-right font-medium text-slate-400">{formatMin(mins)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ) : <p className="text-xs italic text-slate-600">Nenhum dado de tempo.</p>
+          ) : <p className="py-6 text-center text-[13px] text-slate-600">Nenhum dado de tempo.</p>
         )}
       </div>
-
-      {/* Comment input + quick reactions */}
-      <div className="mt-4 space-y-2 border-t border-border/30 pt-4">
-        <QuickReactions onReact={(text) => submitComment(text)} />
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Adicionar comentário... (aperte M para focar)"
-            className="flex-1 rounded-md border border-border/40 bg-surface px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600 transition focus:border-accent/60"
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting || !newComment.trim()}
-            className="rounded-md bg-accent px-3 py-2 text-white transition hover:bg-blue-500 disabled:opacity-40"
-          >
-            <Send size={14} />
-          </button>
-        </form>
-      </div>
-    </section>
+    </div>
   );
 }

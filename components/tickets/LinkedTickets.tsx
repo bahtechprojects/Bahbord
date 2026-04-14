@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Link2, Search } from 'lucide-react';
+import { Plus, X, Search } from 'lucide-react';
 
 interface TicketLink {
   id: string;
@@ -51,7 +51,7 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
     setSearchQuery(q);
     if (q.length < 2) { setSearchResults([]); return; }
     try {
-      const res = await fetch(`/api/tickets`);
+      const res = await fetch('/api/tickets');
       if (res.ok) {
         const all = await res.json();
         const filtered = all.filter((t: SearchResult) =>
@@ -68,11 +68,7 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
     await fetch('/api/ticket-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source_ticket_id: ticketId,
-        target_ticket_id: targetId,
-        link_type: selectedType,
-      }),
+      body: JSON.stringify({ source_ticket_id: ticketId, target_ticket_id: targetId, link_type: selectedType }),
     });
     setShowAdd(false);
     setSearchQuery('');
@@ -85,7 +81,6 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
     await fetchLinks();
   }
 
-  // Agrupar por tipo
   const grouped = links.reduce<Record<string, TicketLink[]>>((acc, link) => {
     const label = linkTypeLabels[link.link_type] || link.link_type;
     if (!acc[label]) acc[label] = [];
@@ -94,48 +89,40 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
   }, {});
 
   return (
-    <section className="rounded-lg border border-border/40 bg-surface2 p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-          <Link2 size={13} />
-          Tickets vinculados
-          {links.length > 0 && <span className="text-slate-600">({links.length})</span>}
-        </h2>
-      </div>
+    <div>
+      <h3 className="mb-2 text-[14px] font-semibold text-slate-200">
+        Tickets vinculados
+        {links.length > 0 && <span className="ml-1.5 text-[12px] font-normal text-slate-500">({links.length})</span>}
+      </h3>
 
-      {/* Grouped links */}
       {Object.entries(grouped).map(([type, items]) => (
         <div key={type} className="mb-2">
-          <p className="mb-1 text-[11px] font-medium text-slate-500">{type}</p>
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">{type}</p>
           {items.map((link) => (
-            <div key={link.id} className="group flex items-center gap-2 rounded px-2 py-1 transition hover:bg-surface">
+            <div key={link.id} className="group flex items-center gap-2 rounded-md px-1 py-1 transition hover:bg-white/[0.03]">
               <span
-                className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                className="rounded px-1.5 py-0.5 text-[10px] font-medium"
                 style={{ backgroundColor: link.status_color + '20', color: link.status_color }}
               >
                 {link.status_name}
               </span>
               <span className="font-mono text-[11px] text-slate-500">{link.ticket_key}</span>
-              <span className="flex-1 truncate text-xs text-slate-300">{link.title}</span>
-              <button
-                onClick={() => handleRemove(link.id)}
-                className="shrink-0 opacity-0 transition hover:text-danger group-hover:opacity-100"
-              >
-                <X size={13} className="text-slate-600 hover:text-danger" />
+              <span className="flex-1 truncate text-[13px] text-slate-300">{link.title}</span>
+              <button onClick={() => handleRemove(link.id)} className="shrink-0 opacity-0 group-hover:opacity-100">
+                <X size={13} className="text-slate-600 hover:text-red-400" />
               </button>
             </div>
           ))}
         </div>
       ))}
 
-      {/* Add link */}
       {showAdd ? (
-        <div className="mt-2 space-y-2 rounded border border-border/40 bg-surface p-3">
+        <div className="mt-2 space-y-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
           <div className="flex gap-2">
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="rounded border border-border/40 bg-surface2 px-2 py-1 text-xs text-slate-300 outline-none"
+              className="rounded border border-white/[0.06] bg-[#1e2126] px-2 py-1 text-[12px] text-slate-300 outline-none"
             >
               {Object.entries(linkTypeLabels).map(([val, label]) => (
                 <option key={val} value={val}>{label}</option>
@@ -148,22 +135,17 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Buscar ticket..."
-                className="w-full rounded border border-border/40 bg-surface2 py-1 pl-7 pr-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-accent/60"
+                className="w-full rounded border border-white/[0.06] bg-[#1e2126] py-1 pl-7 pr-2 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
               />
             </div>
             <button onClick={() => setShowAdd(false)} className="text-slate-500 hover:text-slate-300">
               <X size={14} />
             </button>
           </div>
-
           {searchResults.length > 0 && (
             <div className="max-h-40 space-y-0.5 overflow-auto">
               {searchResults.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => handleAdd(t.id)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs transition hover:bg-surface2"
-                >
+                <button key={t.id} onClick={() => handleAdd(t.id)} className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-[12px] transition hover:bg-white/[0.04]">
                   <span className="font-mono text-slate-500">{t.ticket_key}</span>
                   <span className="truncate text-slate-300">{t.title}</span>
                 </button>
@@ -172,14 +154,10 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
           )}
         </div>
       ) : (
-        <button
-          onClick={() => setShowAdd(true)}
-          className="mt-1 flex items-center gap-1 text-xs text-slate-500 transition hover:text-accent"
-        >
-          <Plus size={14} />
+        <button onClick={() => setShowAdd(true)} className="mt-1 text-[13px] text-slate-500 hover:text-blue-400 transition">
           Adicionar ticket vinculado
         </button>
       )}
-    </section>
+    </div>
   );
 }
