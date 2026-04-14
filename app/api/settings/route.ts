@@ -5,7 +5,7 @@ import { query, getDefaultWorkspaceId } from '@/lib/db';
 export async function GET() {
   try {
     const result = await query(
-      `SELECT id, name, slug, prefix, description, avatar_url, created_at, updated_at
+      `SELECT id, name, slug, prefix, description, created_at, updated_at
       FROM workspaces LIMIT 1`
     );
     return NextResponse.json(result.rows[0] || null);
