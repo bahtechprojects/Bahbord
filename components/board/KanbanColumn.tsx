@@ -4,6 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils/cn';
 import TicketCard from './TicketCard';
+import { useBoardShell } from './BoardShell';
 import { Plus } from 'lucide-react';
 
 interface ColumnCard {
@@ -35,6 +36,7 @@ const columnAccents: Record<string, string> = {
 
 export default function KanbanColumn({ id, title, color, cards, activeItemId, onSelectCard }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
+  const { createInColumn } = useBoardShell();
   const accent = columnAccents[id] || color;
 
   return (
@@ -79,7 +81,10 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
       </SortableContext>
 
       {/* Create button at bottom */}
-      <button className="mt-1.5 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-400">
+      <button
+        onClick={() => createInColumn(id)}
+        className="mt-1.5 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-400"
+      >
         <Plus size={13} />
         Criar ticket
       </button>

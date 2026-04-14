@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, createContext, useContext } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import CreateTicketModal, { type CreateTicketModalRef } from './CreateTicketModal';
@@ -11,15 +11,42 @@ interface BoardShellProps {
   statuses: Array<{ id: string; name: string }>;
   ticketTypes: Array<{ id: string; name: string }>;
   children: React.ReactNode;
-  onTicketClick?: (id: string) => void;
 }
+
+interface BoardShellContextValue {
+  openTicket: (id: string) => void;
+  createInColumn: (statusKey: string) => void;
+}
+
+const BoardShellContext = createContext<BoardShellContextValue>({
+  openTicket: () => {},
+  createInColumn: () => {},
+});
+
+export function useBoardShell() {
+  return useContext(BoardShellContext);
+}
+
+// Mapeamento das column keys para nomes de status
+const statusKeyToName: Record<string, string> = {
+  todo: 'NÃO INICIADO',
+  waiting: 'AGUARDANDO RESPOSTA',
+  progress: 'EM PROGRESSO',
+  done: 'CONCLUÍDO',
+};
 
 export default function BoardShell({ services, statuses, ticketTypes, children }: BoardShellProps) {
   const modalRef = useRef<CreateTicketModalRef>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
+  function createInColumn(statusKey: string) {
+    const statusName = statusKeyToName[statusKey];
+    const matchingStatus = statuses.find((s) => s.name.toUpperCase() === statusName);
+    modalRef.current?.open(matchingStatus?.id);
+  }
+
   return (
-    <BoardShellContext.Provider value={{ openTicket: setSelectedTicketId }}>
+    <BoardShellContext.Provider value={{ openTicket: setSelectedTicketId, createInColumn }}>
       <div className="flex h-screen overflow-hidden bg-[#1a1c1e] text-[#c5c8c6]">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -33,13 +60,4 @@ export default function BoardShell({ services, statuses, ticketTypes, children }
       </div>
     </BoardShellContext.Provider>
   );
-}
-
-// Context para os filhos acessarem openTicket
-import { createContext, useContext } from 'react';
-
-const BoardShellContext = createContext<{ openTicket: (id: string) => void }>({ openTicket: () => {} });
-
-export function useBoardShell() {
-  return useContext(BoardShellContext);
 }

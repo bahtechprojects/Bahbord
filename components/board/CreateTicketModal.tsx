@@ -17,7 +17,7 @@ interface CreateTicketModalProps {
 }
 
 export interface CreateTicketModalRef {
-  open: () => void;
+  open: (presetStatusId?: string) => void;
 }
 
 const priorityOptions = [
@@ -63,7 +63,12 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [sprints, setSprints] = useState<SelectItem[]>([]);
     const [allServices, setAllServices] = useState<SelectItem[]>(initialServices);
 
-    useImperativeHandle(ref, () => ({ open: () => setIsOpen(true) }));
+    useImperativeHandle(ref, () => ({
+      open: (presetStatusId?: string) => {
+        if (presetStatusId) setStatusId(presetStatusId);
+        setIsOpen(true);
+      }
+    }));
 
     // Fetch options when modal opens
     useEffect(() => {
