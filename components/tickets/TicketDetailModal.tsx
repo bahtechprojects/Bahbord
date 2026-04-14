@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Eye, Share2, Maximize2, MoreHorizontal, X as XIcon,
-  ChevronDown, ChevronRight, Plus, Settings2
+  Share2, Maximize2, X as XIcon,
+  ChevronDown, ChevronRight, Settings2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SubtaskList from './SubtaskList';
@@ -196,11 +196,20 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                     <span className="font-medium text-slate-300">{ticket.ticket_key}</span>
                   </div>
                   <div className="flex items-center gap-0.5">
-                    <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-                      <Eye size={14} /> 1
+                    <button
+                      onClick={() => navigator.clipboard.writeText(`${window.location.origin}/ticket/${ticket.id}`).then(() => toast('Link copiado', 'success'))}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                      title="Copiar link"
+                    >
+                      <Share2 size={14} />
                     </button>
-                    <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><Share2 size={14} /></button>
-                    <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><MoreHorizontal size={14} /></button>
+                    <button
+                      onClick={() => { onClose(); window.open(`/ticket/${ticket.id}`, '_blank'); }}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                      title="Abrir em nova aba"
+                    >
+                      <Maximize2 size={14} />
+                    </button>
                     <button onClick={onClose} className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><XIcon size={14} /></button>
                   </div>
                 </div>
@@ -297,10 +306,10 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                       <p>Criado {new Date(ticket.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                       <p>Atualizado {new Date(ticket.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <button className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300">
+                    <a href="/settings" className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300">
                       <Settings2 size={12} />
                       Configurar
-                    </button>
+                    </a>
                   </div>
                 </div>
               </>

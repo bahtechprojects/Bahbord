@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal, Zap, Pin } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import Avatar from '@/components/ui/Avatar';
 
@@ -154,9 +154,6 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
             <ChevronDown size={13} />
           </button>
         )}
-        <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-          <Pin size={14} />
-        </button>
       </div>
 
       {/* Informações */}

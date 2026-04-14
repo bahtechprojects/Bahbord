@@ -19,6 +19,9 @@ export default function MembersSettings() {
   const [loading, setLoading] = useState(true);
   const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null);
   const [phoneValue, setPhoneValue] = useState('');
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
 
   useEffect(() => {
     fetch('/api/options?type=members')
@@ -46,6 +49,28 @@ export default function MembersSettings() {
     setEditingPhoneId(null);
   }
 
+  async function handleInvite() {
+    if (!inviteName.trim() || !inviteEmail.trim()) return;
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'members', display_name: inviteName.trim(), email: inviteEmail.trim(), user_id: crypto.randomUUID(), role: 'member' }),
+    });
+    setInviteName('');
+    setInviteEmail('');
+    setShowInvite(false);
+    const res = await fetch('/api/options?type=members');
+    if (res.ok) setMembers(await res.json());
+  }
+
+  async function handleDeleteMember(id: string) {
+    if (!confirm('Remover este membro? Esta ação não pode ser desfeita.')) return;
+    const res = await fetch(`/api/settings?table=members&id=${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+    }
+  }
+
   if (loading) {
     return <div className="flex h-32 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" /></div>;
   }
@@ -54,11 +79,35 @@ export default function MembersSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Membros</h2>
-        <button className="flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500">
+        <button
+          onClick={() => setShowInvite(!showInvite)}
+          className="flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500"
+        >
           <UserPlus size={14} />
           Convidar membro
         </button>
       </div>
+
+      {showInvite && (
+        <div className="flex items-center gap-3 rounded-lg border border-accent/30 bg-surface2 px-4 py-3">
+          <input
+            autoFocus
+            value={inviteName}
+            onChange={(e) => setInviteName(e.target.value)}
+            placeholder="Nome"
+            className="flex-1 rounded border border-border/40 bg-surface px-2 py-1 text-sm text-slate-200 outline-none focus:border-accent/60"
+          />
+          <input
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleInvite(); }}
+            placeholder="Email"
+            className="flex-1 rounded border border-border/40 bg-surface px-2 py-1 text-sm text-slate-200 outline-none focus:border-accent/60"
+          />
+          <button onClick={handleInvite} className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-blue-500">Adicionar</button>
+          <button onClick={() => setShowInvite(false)} className="text-xs text-slate-500 hover:text-slate-300">Cancelar</button>
+        </div>
+      )}
 
       <div className="rounded-lg border border-border/40 bg-surface2 overflow-hidden">
         <table className="w-full text-sm">
@@ -114,7 +163,7 @@ export default function MembersSettings() {
                   </select>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button className="text-slate-600 transition hover:text-danger">
+                  <button onClick={() => handleDeleteMember(m.id)} className="text-slate-600 transition hover:text-danger">
                     <Trash2 size={14} />
                   </button>
                 </td>

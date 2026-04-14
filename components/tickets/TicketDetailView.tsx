@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Eye, Share2, Maximize2, MoreHorizontal, X as XIcon,
-  ChevronDown, ChevronRight, Plus, Settings2
+  Share2, Maximize2, X as XIcon,
+  ChevronDown, ChevronRight, Settings2
 } from 'lucide-react';
 import SubtaskList from './SubtaskList';
 import LinkedTickets from './LinkedTickets';
@@ -161,17 +161,19 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
           <span className="text-slate-400">{ticket.ticket_key}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-            <Eye size={14} /> 1
-          </button>
-          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+          <button
+            onClick={() => navigator.clipboard.writeText(window.location.href).then(() => toast('Link copiado', 'success'))}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+            title="Copiar link"
+          >
             <Share2 size={14} />
           </button>
-          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
+          <button
+            onClick={() => window.open(window.location.href, '_blank')}
+            className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+            title="Abrir em nova aba"
+          >
             <Maximize2 size={14} />
-          </button>
-          <button className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-            <MoreHorizontal size={14} />
           </button>
           <Link href="/board" className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
             <XIcon size={14} />
@@ -199,15 +201,7 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
         </h1>
       )}
 
-      {/* Action buttons below title */}
-      <div className="mb-5 flex items-center gap-1">
-        <button className="rounded-md border border-white/[0.06] p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-          <Plus size={14} />
-        </button>
-        <button className="rounded-md border border-white/[0.06] p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300">
-          <Settings2 size={14} />
-        </button>
-      </div>
+      <div className="mb-5" />
 
       {/* Two column layout */}
       <div className="flex flex-col lg:flex-row gap-6">
@@ -298,10 +292,10 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
             <p>Criado {new Date(ticket.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             <p>Atualizado {new Date(ticket.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
-          <button className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300">
+          <Link href="/settings" className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300">
             <Settings2 size={12} />
             Configurar
-          </button>
+          </Link>
         </div>
       </div>
     </div>
