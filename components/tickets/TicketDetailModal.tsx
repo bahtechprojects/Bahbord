@@ -14,6 +14,7 @@ import TimeTracker from './TimeTracker';
 import AttachmentList from './AttachmentList';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { useToast } from '@/components/ui/Toast';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
 interface TicketData {
   id: string;
@@ -181,14 +182,14 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                   <div className="flex items-center gap-1.5 text-[13px]">
                     {ticket.parent_key && (
                       <>
-                        <span className="text-sm">{ticket.type_icon}</span>
+                        <TicketTypeIcon typeName={ticket.type_name} typeIcon={ticket.type_icon} size="sm" />
                         <button onClick={() => { /* TODO: open parent */ }} className="text-slate-400 hover:text-blue-400">
                           {ticket.parent_key}
                         </button>
                         <span className="text-slate-600">/</span>
                       </>
                     )}
-                    <span className="text-sm">{ticket.type_icon}</span>
+                    <TicketTypeIcon typeName={ticket.type_name} typeIcon={ticket.type_icon} size="sm" />
                     <span className="font-medium text-slate-300">{ticket.ticket_key}</span>
                   </div>
                   <div className="flex items-center gap-0.5">

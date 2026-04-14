@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { query } from '@/lib/db';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
 const priorityLabels: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: '#ef4444' },
@@ -66,7 +67,7 @@ export default async function BacklogPage() {
                         className="flex items-center px-4 py-2.5 transition hover:bg-input/20"
                       >
                         <span className="w-24 shrink-0 font-mono text-[11px] text-slate-500">
-                          <span className="mr-1">{t.type_icon}</span>
+                          <span className="mr-1 inline-flex"><TicketTypeIcon typeIcon={t.type_icon} size="sm" showBackground={false} /></span>
                           {t.ticket_key}
                         </span>
                         <span className="flex-1 truncate pr-4 text-sm text-slate-200">{t.title}</span>

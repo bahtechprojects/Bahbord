@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 import { CheckSquare, Square, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useToast } from '@/components/ui/Toast';
@@ -219,7 +220,7 @@ export default function ListView({ tickets, statuses, members }: ListViewProps) 
               </button>
               <Link href={`/ticket/${t.id}`} className="flex flex-1 items-center">
                 <span className="w-24 shrink-0 font-mono text-[11px] text-slate-500">
-                  <span className="mr-1">{t.type_icon}</span>
+                  <span className="mr-1 inline-flex"><TicketTypeIcon typeIcon={t.type_icon} size="sm" showBackground={false} /></span>
                   {t.ticket_key}
                 </span>
                 <span className="flex-1 truncate pr-4 text-sm text-slate-200">{t.title}</span>

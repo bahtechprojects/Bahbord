@@ -15,6 +15,7 @@ import AttachmentList from './AttachmentList';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { DetailSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 import { cn } from '@/lib/utils/cn';
 
 interface TicketData {
@@ -146,14 +147,14 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
         <div className="flex items-center gap-1.5 text-[13px]">
           {ticket.parent_key && (
             <>
-              <span className="text-sm">{ticket.type_icon}</span>
+              <TicketTypeIcon typeName={ticket.type_name} typeIcon={ticket.type_icon} size="sm" />
               <Link href={`/ticket/${ticket.parent_id}`} className="text-slate-400 hover:text-blue-400 transition">
                 {ticket.parent_key}
               </Link>
               <span className="text-slate-600">/</span>
             </>
           )}
-          <span className="text-sm">{ticket.type_icon}</span>
+          <TicketTypeIcon typeName={ticket.type_name} typeIcon={ticket.type_icon} size="sm" />
           <span className="text-slate-400">{ticket.ticket_key}</span>
         </div>
         <div className="flex items-center gap-1">

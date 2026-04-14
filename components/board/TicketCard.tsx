@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
 import { Calendar } from 'lucide-react';
 import { useBoardShell } from './BoardShell';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
   urgent: { color: 'bg-red-500', border: 'border-l-red-500', label: 'Urgente' },
@@ -81,7 +82,7 @@ export default function TicketCard({ id, title, service, due, assignee, priority
       <div className="p-3">
         {/* Top: key + type */}
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="text-[13px]">{typeIcon}</span>
+          <TicketTypeIcon typeIcon={typeIcon} size="sm" />
           <span className="font-mono text-[11px] font-medium text-slate-500">
             {ticketKey}
           </span>

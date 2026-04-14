@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
 interface TicketType {
   id: string;
@@ -91,23 +92,7 @@ export default function TicketTypesSettings() {
               <GripVertical size={14} className="cursor-grab text-slate-600" />
 
               {/* Icon */}
-              {editingId === t.id + '-icon' ? (
-                <input
-                  autoFocus
-                  defaultValue={t.icon}
-                  onBlur={(e) => { handleUpdate(t.id, 'icon', e.target.value); setEditingId(null); }}
-                  className="w-10 rounded border border-accent/40 bg-surface px-1 py-0.5 text-center text-sm outline-none"
-                  maxLength={4}
-                />
-              ) : (
-                <span
-                  onClick={() => setEditingId(t.id + '-icon')}
-                  className="cursor-pointer text-lg"
-                  title="Editar ícone"
-                >
-                  {t.icon || '?'}
-                </span>
-              )}
+              <TicketTypeIcon typeName={t.name} typeIcon={t.icon} size="md" />
 
               {/* Color */}
               <input

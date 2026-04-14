@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 import { cn } from '@/lib/utils/cn';
 
 interface TimelineTicket {
@@ -176,7 +177,7 @@ export default function TimelineView({ tickets }: TimelineViewProps) {
                     href={`/ticket/${t.id}`}
                     className="flex items-center gap-1.5 rounded bg-surface px-2 py-1 text-xs transition hover:bg-input/40"
                   >
-                    <span>{t.type_icon}</span>
+                    <TicketTypeIcon typeIcon={t.type_icon} size="sm" showBackground={false} />
                     <span className="font-mono text-[10px] text-slate-500">{t.ticket_key}</span>
                     <span className="max-w-[200px] truncate text-slate-300">{t.title}</span>
                     <span
