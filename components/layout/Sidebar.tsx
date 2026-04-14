@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard, Columns3, List, Inbox, Zap, Search, Settings,
-  ChevronDown, Menu, X, CalendarDays, Clock, ChevronRight
+  ChevronDown, Menu, X, CalendarDays, Clock, ChevronRight, PanelLeftClose, PanelLeft
 } from 'lucide-react';
 
 const mainNav = [
@@ -21,9 +21,14 @@ const planningNav = [
   { href: '/timesheet', label: 'Timesheet', icon: Clock },
 ];
 
+// Context para outros componentes saberem se sidebar está collapsed
+const SidebarContext = createContext<{ collapsed: boolean }>({ collapsed: false });
+export function useSidebar() { return useContext(SidebarContext); }
+
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [planningOpen, setPlanningOpen] = useState(true);
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
@@ -32,16 +37,18 @@ export default function Sidebar() {
       <Link
         href={href as any}
         onClick={() => setMobileOpen(false)}
+        title={collapsed ? label : undefined}
         className={cn(
           'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
           active
             ? 'bg-white/[0.08] text-white'
-            : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+            : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200',
+          collapsed && 'justify-center px-0'
         )}
       >
         <Icon size={16} strokeWidth={active ? 2 : 1.5} className={active ? 'text-blue-400' : 'text-slate-500'} />
-        {label}
-        {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}
+        {!collapsed && label}
+        {!collapsed && active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}
       </Link>
     );
   }
@@ -49,85 +56,108 @@ export default function Sidebar() {
   const sidebarContent = (
     <>
       {/* Workspace header */}
-      <div className="flex items-center gap-2.5 px-4 py-4">
-        <img src="/logo-bah.svg" alt="Bah!" className="h-8 w-8 rounded-lg object-contain" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <span className="text-[13px] font-semibold text-white truncate">Bah!Company</span>
-            <ChevronDown size={12} className="shrink-0 text-slate-500" />
+      <div className={cn('flex items-center gap-2.5 px-4 py-4', collapsed && 'justify-center px-2')}>
+        <img src="/logo-bah.svg" alt="Bah!" className="h-7 w-7 rounded-md object-contain shrink-0" />
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[13px] font-semibold text-white truncate">Bah!Company</span>
+            </div>
+            <span className="text-[10px] text-slate-500">Projeto de software</span>
           </div>
-          <span className="text-[11px] text-slate-500">Projeto de software</span>
-        </div>
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="text-slate-500 hover:text-slate-300 lg:hidden"
-        >
+        )}
+        {/* Close button on mobile */}
+        <button onClick={() => setMobileOpen(false)} className="text-slate-500 hover:text-slate-300 lg:hidden">
           <X size={18} />
         </button>
       </div>
 
-      <div className="mx-3 mb-3 h-px bg-white/[0.06]" />
+      {!collapsed && <div className="mx-3 mb-3 h-px bg-white/[0.06]" />}
 
       {/* Search */}
-      <div className="px-3 pb-2">
-        <button
-          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
-          className="flex w-full items-center gap-2.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-[7px] text-[12px] text-slate-500 transition hover:border-white/[0.1] hover:bg-white/[0.05]"
-        >
-          <Search size={14} />
-          <span className="flex-1 text-left">Pesquisar...</span>
-          <kbd className="hidden rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-600 sm:inline">/</kbd>
-        </button>
-      </div>
+      {!collapsed ? (
+        <div className="px-3 pb-2">
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+            className="flex w-full items-center gap-2.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-[7px] text-[12px] text-slate-500 transition hover:border-white/[0.1] hover:bg-white/[0.05]"
+          >
+            <Search size={14} />
+            <span className="flex-1 text-left">Pesquisar...</span>
+            <kbd className="hidden rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-600 sm:inline">/</kbd>
+          </button>
+        </div>
+      ) : (
+        <div className="px-2 pb-2">
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+            title="Pesquisar (Ctrl+K)"
+            className="flex w-full items-center justify-center rounded-md p-2 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+          >
+            <Search size={16} />
+          </button>
+        </div>
+      )}
 
-      {/* Main navigation */}
-      <nav className="flex-1 space-y-0.5 px-3">
+      {/* Navigation */}
+      <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto">
         <NavItem href="/" label="Dashboard" icon={LayoutDashboard} />
 
-        <div className="pt-1 pb-0.5">
-          <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Visualizações</span>
-        </div>
-        {mainNav.map((item) => (
-          <NavItem key={item.href} {...item} />
-        ))}
+        {!collapsed && (
+          <div className="pt-2 pb-0.5">
+            <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Visualizações</span>
+          </div>
+        )}
+        {collapsed && <div className="my-2 mx-2 h-px bg-white/[0.06]" />}
+        {mainNav.map((item) => <NavItem key={item.href} {...item} />)}
 
-        {/* Planning section - collapsible */}
-        <button
-          onClick={() => setPlanningOpen(!planningOpen)}
-          className="mt-2 flex w-full items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 hover:text-slate-400"
-        >
-          <ChevronRight size={11} className={cn('transition-transform', planningOpen && 'rotate-90')} />
-          Planejamento
-        </button>
-        {planningOpen && planningNav.map((item) => (
-          <NavItem key={item.href} {...item} />
-        ))}
+        {!collapsed ? (
+          <button
+            onClick={() => setPlanningOpen(!planningOpen)}
+            className="mt-2 flex w-full items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 hover:text-slate-400"
+          >
+            <ChevronRight size={11} className={cn('transition-transform', planningOpen && 'rotate-90')} />
+            Planejamento
+          </button>
+        ) : (
+          <div className="my-2 mx-2 h-px bg-white/[0.06]" />
+        )}
+        {(collapsed || planningOpen) && planningNav.map((item) => <NavItem key={item.href} {...item} />)}
       </nav>
 
       {/* Footer */}
       <div className="mx-3 h-px bg-white/[0.06]" />
-      <div className="px-3 py-3">
+      <div className="px-3 py-2">
         <NavItem href="/settings" label="Configurações" icon={Settings} />
+      </div>
+
+      {/* Collapse toggle (desktop only) */}
+      <div className="hidden px-3 pb-3 lg:block">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            'flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[12px] text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-400',
+            collapsed && 'justify-center px-0'
+          )}
+        >
+          {collapsed ? <PanelLeft size={16} /> : <><PanelLeftClose size={14} /><span>Recolher</span></>}
+        </button>
       </div>
     </>
   );
 
   return (
-    <>
+    <SidebarContext.Provider value={{ collapsed }}>
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-50 rounded-md bg-surface2 p-2 text-slate-400 shadow-lg hover:text-white lg:hidden"
+        className="fixed left-3 top-3 z-50 rounded-md bg-[#232730] p-2 text-slate-400 shadow-lg hover:text-white lg:hidden"
       >
         <Menu size={20} />
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Mobile sidebar */}
@@ -139,9 +169,12 @@ export default function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-[240px] shrink-0 flex-col bg-[#161819] lg:flex">
+      <aside className={cn(
+        'hidden shrink-0 flex-col bg-[#161819] transition-all duration-200 lg:flex',
+        collapsed ? 'w-[56px]' : 'w-[240px]'
+      )}>
         {sidebarContent}
       </aside>
-    </>
+    </SidebarContext.Provider>
   );
 }

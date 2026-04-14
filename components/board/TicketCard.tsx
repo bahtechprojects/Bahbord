@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
-import { Calendar, MessageSquare, Paperclip, CheckSquare } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useBoardShell } from './BoardShell';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
@@ -33,17 +33,12 @@ function getServiceStyle(service: string) {
   return { bg: 'bg-slate-500/8', text: 'text-slate-400' };
 }
 
-// Gera cor consistente a partir do nome
 function nameToColor(name: string): string {
   const colors = [
-    'from-blue-600 to-blue-500',
-    'from-violet-600 to-purple-500',
-    'from-emerald-600 to-green-500',
-    'from-amber-600 to-orange-500',
-    'from-rose-600 to-pink-500',
-    'from-cyan-600 to-teal-500',
-    'from-indigo-600 to-blue-500',
-    'from-fuchsia-600 to-pink-500',
+    'from-blue-600 to-blue-500', 'from-violet-600 to-purple-500',
+    'from-emerald-600 to-green-500', 'from-amber-600 to-orange-500',
+    'from-rose-600 to-pink-500', 'from-cyan-600 to-teal-500',
+    'from-indigo-600 to-blue-500', 'from-fuchsia-600 to-pink-500',
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -77,75 +72,54 @@ export default function TicketCard({ id, title, service, due, assignee, priority
   const hasDue = due && due !== '-';
   const svc = hasService ? getServiceStyle(service) : null;
 
-  function handleClick() {
-    if (isDragging) return;
-    openTicket(id);
-  }
-
   return (
     <article
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      onClick={handleClick}
+      onClick={() => { if (!isDragging) openTicket(id); }}
       className={cn(
-        'group relative cursor-pointer rounded-lg border border-white/[0.05] bg-[#232730] transition-all duration-200',
-        'hover:border-white/[0.12] hover:bg-[#282d37] hover:shadow-lg hover:shadow-black/20',
+        'group cursor-pointer rounded-md border border-white/[0.05] bg-[#232730] transition-all duration-150',
+        'hover:border-white/[0.12] hover:bg-[#282d37]',
         'border-l-[3px]',
         prio.border,
         isDragging && 'opacity-30 rotate-2 scale-105',
         active && 'ring-2 ring-blue-500/30 border-blue-500/20'
       )}
     >
-      <div className="px-3.5 py-3">
-        {/* Row 1: Type icon + Key + Priority dot */}
-        <div className="mb-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TicketTypeIcon typeIcon={typeIcon} size="sm" />
-            <span className="font-mono text-[11px] font-semibold tracking-wide text-slate-500">
-              {ticketKey}
-            </span>
+      <div className="px-3 py-2.5">
+        {/* Row 1: Type + Key + Priority */}
+        <div className="mb-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <TicketTypeIcon typeIcon={typeIcon} size="sm" showBackground={false} />
+            <span className="font-mono text-[10px] font-semibold tracking-wide text-slate-500">{ticketKey}</span>
           </div>
-          <div className={cn('h-2 w-2 rounded-full', prio.dot)} title={prio.label} />
+          <div className={cn('h-[7px] w-[7px] rounded-full', prio.dot)} title={prio.label} />
         </div>
 
-        {/* Row 2: Title */}
-        <h3 className="mb-3 text-[13px] font-medium leading-[1.5] text-[#d4d7dc] line-clamp-2 group-hover:text-white transition-colors">
+        {/* Title */}
+        <h3 className="mb-1.5 text-[12.5px] font-medium leading-[1.4] text-[#d4d7dc] line-clamp-2 group-hover:text-white transition-colors">
           {title}
         </h3>
 
-        {/* Row 3: Service badge */}
-        {hasService && svc && (
-          <div className="mb-3">
-            <span className={cn(
-              'inline-flex items-center rounded px-2 py-[3px] text-[10px] font-semibold tracking-wide',
-              svc.bg, svc.text
-            )}>
+        {/* Footer: service + date + avatar */}
+        <div className="flex items-center gap-1.5">
+          {hasService && svc && (
+            <span className={cn('rounded px-1.5 py-[1px] text-[9px] font-semibold tracking-wide', svc.bg, svc.text)}>
               {service}
             </span>
-          </div>
-        )}
-
-        {/* Row 4: Footer — metadata + avatar */}
-        <div className="flex items-center justify-between">
-          {/* Left: date + counters */}
-          <div className="flex items-center gap-2.5">
-            {hasDue && (
-              <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                <Calendar size={11} strokeWidth={1.5} />
-                <span>{due}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Right: Avatar */}
+          )}
+          {hasDue && (
+            <span className="flex items-center gap-0.5 text-[10px] text-slate-600">
+              <Calendar size={9} strokeWidth={1.5} />
+              {due}
+            </span>
+          )}
+          <span className="flex-1" />
           {initials && (
             <div
-              className={cn(
-                'flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br text-[9px] font-bold text-white shadow-sm',
-                nameToColor(assignee)
-              )}
+              className={cn('flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br text-[8px] font-bold text-white', nameToColor(assignee))}
               title={assignee}
             >
               {initials}
