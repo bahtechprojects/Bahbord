@@ -223,9 +223,9 @@ export default function KanbanBoard({ initialItems }: KanbanBoardProps) {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-1 gap-2.5 overflow-x-auto pb-2">
+        <div className="flex flex-1 gap-3 pb-2">
           {columns.map((column) => (
-            <div key={column.id} className="w-[240px] shrink-0 xl:flex-1 xl:w-auto">
+            <div key={column.id} className="flex-1 min-w-0">
               <KanbanColumn
                 id={column.id}
                 title={column.title}
@@ -241,7 +241,7 @@ export default function KanbanBoard({ initialItems }: KanbanBoardProps) {
         {/* Drag overlay — mostra uma cópia fluida do card durante o arraste */}
         <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
           {activeCard ? (
-            <div className="w-[240px] rotate-2 opacity-90">
+            <div className="w-[220px] rotate-2 opacity-90">
               <TicketCard
                 {...activeCard}
                 active={false}

@@ -54,6 +54,13 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{title}</span>
           <span className="text-[11px] font-semibold tabular-nums text-slate-600">{cards.length}</span>
         </div>
+        <button
+          onClick={() => createInColumn(id)}
+          className="rounded p-0.5 text-slate-600 transition hover:bg-white/[0.06] hover:text-slate-300"
+          title="Criar ticket"
+        >
+          <Plus size={15} />
+        </button>
       </div>
 
       {/* Cards */}
