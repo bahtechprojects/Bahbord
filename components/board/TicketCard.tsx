@@ -1,10 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
 import { Calendar } from 'lucide-react';
+import { useBoardShell } from './BoardShell';
 
 const priorityConfig: Record<string, { color: string; border: string; label: string }> = {
   urgent: { color: 'bg-red-500', border: 'border-l-red-500', label: 'Urgente' },
@@ -46,9 +46,9 @@ interface TicketCardProps {
 }
 
 export default function TicketCard({ id, title, service, due, assignee, priority, ticketKey, typeIcon, active, onClick }: TicketCardProps) {
-  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  const { openTicket } = useBoardShell();
 
   const prio = priorityConfig[priority] || priorityConfig.medium;
   const initials = assignee !== 'Sem responsável'
@@ -57,12 +57,9 @@ export default function TicketCard({ id, title, service, due, assignee, priority
 
   const hasService = service && service !== 'Sem serviço';
 
-  function handleClick(e: React.MouseEvent) {
-    // O PointerSensor com distance:8 permite click normal.
-    // Se isDragging, não navegar.
+  function handleClick() {
     if (isDragging) return;
-    e.preventDefault();
-    router.push(`/ticket/${id}`);
+    openTicket(id);
   }
 
   return (

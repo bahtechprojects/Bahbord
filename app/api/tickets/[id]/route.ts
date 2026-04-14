@@ -4,19 +4,18 @@ import { query } from '@/lib/db';
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const result = await query(
     `SELECT
-      id, title, description, priority, ticket_key, due_date,
-      type_name, type_icon, type_color, ticket_type_id,
-      status_id, status_name, status_color,
-      service_id, service_name, service_color,
-      assignee_id, assignee_name,
-      reporter_id, reporter_name,
-      category_id, category_name,
-      sprint_id, sprint_name,
-      parent_id, parent_key, parent_title,
-      subtask_count, subtask_done_count, comment_count, total_time_minutes,
-      created_at, updated_at, completed_at
-    FROM tickets_full
-    WHERE id = $1`,
+      tf.*,
+      t.ticket_type_id,
+      -- Parent info
+      pw.prefix || '-' || LPAD(pt.sequence_number::text, 3, '0') AS parent_key,
+      pt.title AS parent_title,
+      -- Time tracking total
+      COALESCE((SELECT SUM(duration_minutes) FROM time_entries te WHERE te.ticket_id = tf.id AND te.is_running = false), 0)::int AS total_time_minutes
+    FROM tickets_full tf
+    JOIN tickets t ON t.id = tf.id
+    LEFT JOIN tickets pt ON pt.id = t.parent_id
+    LEFT JOIN workspaces pw ON pw.id = pt.workspace_id
+    WHERE tf.id = $1`,
     [params.id]
   );
 
