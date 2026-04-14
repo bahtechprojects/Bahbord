@@ -9,7 +9,8 @@ export default async function HomePage() {
   const [
     ticketStats, sprintRow, recentTickets,
     byStatus, byService, byPriority,
-    weeklyCompleted, byAssignee, sprintBurndown
+    weeklyCompleted, byAssignee, sprintBurndown,
+    byType
   ] = await Promise.all([
     query(`
       SELECT
@@ -99,6 +100,19 @@ export default async function HomePage() {
         AND t.sprint_id = (SELECT id FROM sprints WHERE is_active = true LIMIT 1)
       GROUP BY a.created_at::date
       ORDER BY a.created_at::date ASC
+    `),
+    // Entregas por tipo de ticket
+    query(`
+      SELECT
+        COALESCE(type_name, 'Sem tipo') AS name,
+        COALESCE(type_color, '#6b7280') AS color,
+        COUNT(*)::int AS value,
+        COUNT(*) FILTER (WHERE completed_at > NOW() - INTERVAL '30 days')::int AS last_30d,
+        COUNT(*) FILTER (WHERE completed_at > NOW() - INTERVAL '7 days')::int AS last_7d
+      FROM tickets_full
+      WHERE is_done = true AND is_archived = false
+      GROUP BY type_name, type_color
+      ORDER BY value DESC
     `)
   ]);
 
@@ -146,6 +160,7 @@ export default async function HomePage() {
               byStatus={byStatus.rows as any[]}
               byService={byService.rows as any[]}
               byPriority={byPriority.rows as any[]}
+              byType={byType.rows as any[]}
             />
 
             {/* Charts row 2 */}

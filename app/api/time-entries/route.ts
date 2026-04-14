@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
     const result = await query(
       `SELECT te.id, te.description, te.started_at, te.ended_at,
-        te.duration_minutes, te.is_running, te.created_at,
+        te.duration_minutes, te.is_running, te.is_billable, te.created_at,
         m.display_name AS member_name
       FROM time_entries te
       LEFT JOIN members m ON m.id = te.member_id
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
       );
 
       const result = await query(
-        `INSERT INTO time_entries (ticket_id, member_id, started_at, is_running)
-         VALUES ($1, $2, NOW(), true)
+        `INSERT INTO time_entries (ticket_id, member_id, started_at, is_running, is_billable)
+         VALUES ($1, $2, NOW(), true, true)
          RETURNING *`,
         [ticket_id, memberId]
       );
@@ -75,16 +75,16 @@ export async function POST(request: Request) {
 
     // Log manual: action = 'log'
     if (action === 'log') {
-      const { duration_minutes, description } = body;
+      const { duration_minutes, description, is_billable } = body;
       if (!duration_minutes || duration_minutes <= 0) {
         return NextResponse.json({ error: 'duration_minutes deve ser > 0' }, { status: 400 });
       }
 
       const result = await query(
-        `INSERT INTO time_entries (ticket_id, member_id, started_at, ended_at, duration_minutes, is_running, description)
-         VALUES ($1, $2, NOW() - ($3 || ' minutes')::interval, NOW(), $3, false, $4)
+        `INSERT INTO time_entries (ticket_id, member_id, started_at, ended_at, duration_minutes, is_running, description, is_billable)
+         VALUES ($1, $2, NOW() - ($3 || ' minutes')::interval, NOW(), $3, false, $4, $5)
          RETURNING *`,
-        [ticket_id, memberId, duration_minutes, description || null]
+        [ticket_id, memberId, duration_minutes, description || null, is_billable !== false]
       );
       return NextResponse.json(result.rows[0], { status: 201 });
     }
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, description, duration_minutes } = body;
+    const { id, description, duration_minutes, is_billable } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'id obrigatório' }, { status: 400 });
@@ -118,6 +118,12 @@ export async function PATCH(request: Request) {
     if (duration_minutes !== undefined) {
       sets.push(`duration_minutes = $${idx}`);
       values.push(duration_minutes);
+      idx++;
+    }
+
+    if (is_billable !== undefined) {
+      sets.push(`is_billable = $${idx}`);
+      values.push(is_billable);
       idx++;
     }
 

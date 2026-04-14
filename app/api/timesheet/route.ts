@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const result = await query(
       `SELECT
         te.id, te.description, te.started_at, te.ended_at,
-        te.duration_minutes, te.is_running, te.created_at,
+        te.duration_minutes, te.is_running, te.is_billable, te.created_at,
         m.display_name AS member_name,
         tf.ticket_key, tf.title AS ticket_title
       FROM time_entries te
@@ -25,6 +25,8 @@ export async function GET(request: Request) {
       `SELECT
         m.display_name AS member_name,
         SUM(te.duration_minutes)::int AS total_minutes,
+        SUM(CASE WHEN te.is_billable THEN te.duration_minutes ELSE 0 END)::int AS billable_minutes,
+        SUM(CASE WHEN NOT te.is_billable THEN te.duration_minutes ELSE 0 END)::int AS non_billable_minutes,
         COUNT(te.id)::int AS entry_count
       FROM time_entries te
       LEFT JOIN members m ON m.id = te.member_id

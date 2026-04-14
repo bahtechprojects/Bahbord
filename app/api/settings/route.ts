@@ -23,7 +23,7 @@ export async function PATCH(request: Request) {
 
     // Generic CRUD para tabelas de configuração
     if (table) {
-      const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'members'];
+      const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'members', 'clients'];
       if (!allowedTables.includes(table)) {
         return NextResponse.json({ error: 'Tabela não permitida' }, { status: 400 });
       }
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { table, ...fields } = body;
 
-    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions'];
+    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'clients'];
     if (!table || !allowedTables.includes(table)) {
       return NextResponse.json({ error: 'Tabela não permitida' }, { status: 400 });
     }
@@ -124,7 +124,7 @@ export async function DELETE(request: Request) {
     const table = searchParams.get('table');
     const id = searchParams.get('id');
 
-    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions'];
+    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'clients'];
     if (!table || !id || !allowedTables.includes(table)) {
       return NextResponse.json({ error: 'table e id obrigatórios' }, { status: 400 });
     }
@@ -141,6 +141,13 @@ export async function DELETE(request: Request) {
       const check = await query(`SELECT COUNT(*) AS cnt FROM tickets WHERE service_id = $1`, [id]);
       if (parseInt(check.rows[0].cnt) > 0) {
         return NextResponse.json({ error: 'Não é possível remover: existem tickets com este serviço' }, { status: 409 });
+      }
+    }
+
+    if (table === 'clients') {
+      const check = await query(`SELECT COUNT(*) AS cnt FROM tickets WHERE client_id = $1`, [id]);
+      if (parseInt(check.rows[0].cnt) > 0) {
+        return NextResponse.json({ error: 'Não é possível remover: existem tickets com este cliente' }, { status: 409 });
       }
     }
 

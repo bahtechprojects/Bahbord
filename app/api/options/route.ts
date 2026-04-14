@@ -13,6 +13,7 @@ export async function GET(request: Request) {
       categories: `SELECT id, name, color FROM categories ORDER BY name ASC`,
       sprints: `SELECT id, name, is_active FROM sprints ORDER BY created_at DESC`,
       ticket_types: `SELECT id, name, icon, color FROM ticket_types ORDER BY position ASC`,
+      clients: `SELECT id, name, color FROM clients WHERE is_active = true ORDER BY name ASC`,
     };
 
     if (!type || !queries[type]) {

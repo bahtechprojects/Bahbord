@@ -1,6 +1,7 @@
 'use client';
 
-import { Play, Square, Clock, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Play, Square, Clock, Trash2, Plus } from 'lucide-react';
 import { useTimeTracking, formatDuration, formatMinutes } from '@/lib/hooks/useTimeTracking';
 import { useToast } from '@/components/ui/Toast';
 
@@ -9,8 +10,14 @@ interface TimeTrackerProps {
 }
 
 export default function TimeTracker({ ticketId }: TimeTrackerProps) {
-  const { entries, runningEntry, elapsed, totalMinutes, startTimer, stopTimer, deleteEntry } = useTimeTracking(ticketId);
+  const { entries, runningEntry, elapsed, totalMinutes, billableMinutes, nonBillableMinutes, startTimer, stopTimer, deleteEntry, logManualEntry } = useTimeTracking(ticketId);
   const { toast } = useToast();
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualHours, setManualHours] = useState(0);
+  const [manualMinutes, setManualMinutes] = useState(30);
+  const [manualDescription, setManualDescription] = useState('');
+  const [manualBillable, setManualBillable] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleDeleteEntry(id: string) {
     if (!confirm('Remover este registro de tempo?')) return;
@@ -19,6 +26,28 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
       toast('Registro removido', 'success');
     } catch {
       toast('Erro ao remover', 'error');
+    }
+  }
+
+  async function handleManualSubmit() {
+    const totalMin = manualHours * 60 + manualMinutes;
+    if (totalMin <= 0) {
+      toast('Duração deve ser maior que zero', 'error');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await logManualEntry(totalMin, manualDescription, manualBillable);
+      toast('Tempo registrado', 'success');
+      setShowManualForm(false);
+      setManualHours(0);
+      setManualMinutes(30);
+      setManualDescription('');
+      setManualBillable(true);
+    } catch {
+      toast('Erro ao registrar', 'error');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -31,27 +60,93 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
           Time Tracking
         </h3>
 
-        {runningEntry ? (
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-lg font-bold text-accent">
-              {formatDuration(elapsed)}
-            </span>
-            <button
-              onClick={stopTimer}
-              className="flex items-center gap-1.5 rounded bg-danger/20 px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger/30"
-            >
-              <Square size={12} fill="currentColor" />
-              Parar
-            </button>
+        <div className="flex items-center gap-2">
+          {runningEntry ? (
+            <>
+              <span className="font-mono text-lg font-bold text-accent">
+                {formatDuration(elapsed)}
+              </span>
+              <button
+                onClick={stopTimer}
+                className="flex items-center gap-1.5 rounded bg-danger/20 px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger/30"
+              >
+                <Square size={12} fill="currentColor" />
+                Parar
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={startTimer}
+                className="flex items-center gap-1.5 rounded bg-accent/20 px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/30"
+              >
+                <Play size={12} fill="currentColor" />
+                Iniciar
+              </button>
+              <button
+                onClick={() => setShowManualForm(!showManualForm)}
+                className="flex items-center gap-1.5 rounded bg-slate-700/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-700"
+              >
+                <Plus size={12} />
+                Registrar tempo
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Manual entry form */}
+        {showManualForm && (
+          <div className="mt-3 space-y-2 rounded-md border border-border/30 bg-surface p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={manualHours}
+                  onChange={(e) => setManualHours(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-14 rounded border border-border/40 bg-input px-2 py-1 text-center text-xs text-white"
+                />
+                <span className="text-[11px] text-slate-500">h</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={manualMinutes}
+                  onChange={(e) => setManualMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  className="w-14 rounded border border-border/40 bg-input px-2 py-1 text-center text-xs text-white"
+                />
+                <span className="text-[11px] text-slate-500">min</span>
+              </div>
+            </div>
+            <input
+              type="text"
+              placeholder="Descrição (opcional)"
+              value={manualDescription}
+              onChange={(e) => setManualDescription(e.target.value)}
+              className="w-full rounded border border-border/40 bg-input px-2 py-1.5 text-xs text-white placeholder:text-slate-600"
+            />
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={manualBillable}
+                  onChange={(e) => setManualBillable(e.target.checked)}
+                  className="h-3 w-3 rounded border-slate-600 accent-accent"
+                />
+                Hora efetiva (cobrável)
+              </label>
+              <button
+                onClick={handleManualSubmit}
+                disabled={submitting}
+                className="rounded bg-accent/20 px-3 py-1 text-[11px] font-medium text-accent transition hover:bg-accent/30 disabled:opacity-50"
+              >
+                {submitting ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
           </div>
-        ) : (
-          <button
-            onClick={startTimer}
-            className="flex items-center gap-1.5 rounded bg-accent/20 px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/30"
-          >
-            <Play size={12} fill="currentColor" />
-            Iniciar
-          </button>
         )}
       </div>
 
@@ -64,6 +159,14 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
         <p className="text-sm font-medium text-slate-300">
           Total: <span className="text-white">{formatMinutes(totalMinutes)}</span>
         </p>
+        <div className="mt-1 flex items-center gap-3 text-[11px]">
+          <span className="text-emerald-400">
+            Efetivas: {formatMinutes(billableMinutes)}
+          </span>
+          <span className="text-slate-500">
+            Não cobradas: {formatMinutes(nonBillableMinutes)}
+          </span>
+        </div>
         {entries.length > 0 && (
           <div className="mt-2 max-h-32 space-y-1 overflow-auto">
             {entries.filter((e) => !e.is_running).map((e) => (
@@ -71,6 +174,15 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
                 <span className="text-slate-500">
                   {new Date(e.started_at).toLocaleDateString('pt-BR')}
                 </span>
+                {e.is_billable ? (
+                  <span className="rounded px-1 text-[10px] font-semibold text-emerald-400" title="Hora efetiva">
+                    R$
+                  </span>
+                ) : (
+                  <span className="rounded px-1 text-[10px] font-semibold text-slate-600 line-through" title="Não cobrada">
+                    R$
+                  </span>
+                )}
                 <span className="text-slate-400">{e.member_name}</span>
                 <span className="font-medium text-slate-300">
                   {formatMinutes(e.duration_minutes || 0)}

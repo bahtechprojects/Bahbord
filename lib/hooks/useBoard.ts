@@ -17,6 +17,10 @@ export type TicketItem = {
   priority: string;
   ticketKey: string;
   typeIcon: string;
+  typeName?: string;
+  categoryName?: string;
+  completedAt?: string | null;
+  clientName?: string | null;
 };
 
 export type BoardItems = {
@@ -77,6 +81,10 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
               priority: t.priority ?? 'medium',
               ticketKey: t.ticketKey ?? t.ticket_key ?? t.id.substring(0, 8),
               typeIcon: t.typeIcon ?? t.type_icon ?? '📋',
+              typeName: t.typeName ?? t.type_name ?? undefined,
+              categoryName: t.categoryName ?? t.category_name ?? undefined,
+              completedAt: t.completedAt ?? t.completed_at ?? null,
+              clientName: t.clientName ?? t.client_name ?? null,
             });
 
             setItems({

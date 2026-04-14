@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import Avatar from '@/components/ui/Avatar';
 
@@ -47,6 +47,9 @@ interface TicketSidebarProps {
     parent_key: string | null;
     parent_id: string | null;
     parent_title: string | null;
+    client_id: string | null;
+    client_name: string | null;
+    client_color: string | null;
   };
   onUpdate: (field: string, value: unknown) => Promise<void>;
 }
@@ -59,22 +62,25 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
   const [members, setMembers] = useState<FieldOption[]>([]);
   const [categories, setCategories] = useState<FieldOption[]>([]);
   const [sprints, setSprints] = useState<FieldOption[]>([]);
+  const [clients, setClients] = useState<FieldOption[]>([]);
 
   useEffect(() => {
     async function fetchOptions() {
       try {
-        const [statusRes, serviceRes, memberRes, categoryRes, sprintRes] = await Promise.all([
+        const [statusRes, serviceRes, memberRes, categoryRes, sprintRes, clientRes] = await Promise.all([
           fetch('/api/options?type=statuses'),
           fetch('/api/options?type=services'),
           fetch('/api/options?type=members'),
           fetch('/api/options?type=categories'),
           fetch('/api/options?type=sprints'),
+          fetch('/api/options?type=clients'),
         ]);
         if (statusRes.ok) setStatuses(await statusRes.json());
         if (serviceRes.ok) setServices(await serviceRes.json());
         if (memberRes.ok) setMembers(await memberRes.json());
         if (categoryRes.ok) setCategories(await categoryRes.json());
         if (sprintRes.ok) setSprints(await sprintRes.json());
+        if (clientRes.ok) setClients(await clientRes.json());
       } catch (err) { console.error('Erro ao carregar opções:', err); }
     }
     fetchOptions();
@@ -215,15 +221,15 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
               )}
             </InfoRow>
 
-            {/* Pai */}
-            <InfoRow label="Pai">
-              {ticket.parent_key ? (
-                <Link href={`/ticket/${ticket.parent_id}`} className="flex items-center gap-1.5 text-green-400 hover:text-green-300">
-                  <Zap size={13} />
-                  <span className="rounded border border-green-500/20 px-1.5 py-0.5 text-[12px]">
-                    {ticket.parent_key} {ticket.parent_title}
-                  </span>
-                </Link>
+            {/* Cliente */}
+            <InfoRow label="Cliente" fieldName="client_id" options={clients} currentValue={ticket.client_id}>
+              {ticket.client_name ? (
+                <span
+                  className="rounded px-2 py-0.5 text-[12px] font-medium"
+                  style={{ backgroundColor: (ticket.client_color || '#6366f1') + '20', color: ticket.client_color || '#6366f1' }}
+                >
+                  {ticket.client_name}
+                </span>
               ) : (
                 <span className="text-slate-600">Nenhum</span>
               )}
@@ -299,6 +305,3 @@ function CollapsibleSection({ title, subtitle, icon, defaultOpen = false }: {
   );
 }
 
-function Link({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
-  return <a href={href} className={className}>{children}</a>;
-}

@@ -47,6 +47,9 @@ interface TicketData {
   parent_id: string | null;
   parent_key: string | null;
   parent_title: string | null;
+  client_id: string | null;
+  client_name: string | null;
+  client_color: string | null;
   subtask_count: number;
   subtask_done_count: number;
   comment_count: number;

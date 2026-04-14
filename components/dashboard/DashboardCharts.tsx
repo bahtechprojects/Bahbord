@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, ResponsiveContainer } from 'recharts';
+import { Package } from 'lucide-react';
 
 interface ChartData {
   name: string;
@@ -8,10 +10,16 @@ interface ChartData {
   value: number;
 }
 
+interface TypeChartData extends ChartData {
+  last_30d: number;
+  last_7d: number;
+}
+
 interface DashboardChartsProps {
   byStatus: ChartData[];
   byService: ChartData[];
   byPriority: ChartData[];
+  byType: TypeChartData[];
 }
 
 function ChartTooltip({ active, payload }: any) {
@@ -24,8 +32,115 @@ function ChartTooltip({ active, payload }: any) {
   );
 }
 
-export default function DashboardCharts({ byStatus, byService, byPriority }: DashboardChartsProps) {
+type PeriodFilter = '7d' | '30d' | 'all';
+
+export default function DashboardCharts({ byStatus, byService, byPriority, byType }: DashboardChartsProps) {
+  const [typePeriod, setTypePeriod] = useState<PeriodFilter>('all');
+  const filteredByType = byType.map((t) => ({
+    ...t,
+    value: typePeriod === '7d' ? t.last_7d : typePeriod === '30d' ? t.last_30d : t.value,
+  })).filter((t) => t.value > 0);
+
+  const totalDelivered = filteredByType.reduce((sum, t) => sum + t.value, 0);
+
   return (
+    <>
+    {/* Entregas por tipo de ticket */}
+    <div className="rounded-lg border border-border/40 bg-surface2 p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <Package size={13} />
+          Entregas por tipo de ticket
+        </h3>
+        <div className="flex gap-1 rounded-md bg-surface p-0.5">
+          {([['7d', '7 dias'], ['30d', '30 dias'], ['all', 'Todos']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTypePeriod(key)}
+              className={`rounded px-2 py-0.5 text-[10px] font-medium transition ${
+                typePeriod === key
+                  ? 'bg-accent text-white'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredByType.length > 0 ? (
+        <>
+          {/* Summary cards */}
+          <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {filteredByType.slice(0, 8).map((t) => (
+              <div
+                key={t.name}
+                className="flex items-center gap-2.5 rounded-md border border-border/30 bg-surface px-3 py-2"
+              >
+                <span
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[11px] font-bold text-white"
+                  style={{ backgroundColor: t.color }}
+                >
+                  {t.name.charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-medium text-slate-300">{t.name}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span className="font-semibold text-white">{t.value}</span>
+                    {typePeriod === 'all' && (
+                      <>
+                        <span>30d: {t.last_30d}</span>
+                        <span>7d: {t.last_7d}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pie chart */}
+          <div className="flex items-center">
+            <ResponsiveContainer width="40%" height={180}>
+              <PieChart>
+                <Pie
+                  data={filteredByType}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={35}
+                  outerRadius={65}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {filteredByType.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-1 flex-col gap-1.5">
+              {filteredByType.map((t) => {
+                const pct = totalDelivered > 0 ? ((t.value / totalDelivered) * 100).toFixed(0) : 0;
+                return (
+                  <div key={t.name} className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
+                    <span className="truncate text-[10px] text-slate-400">{t.name}</span>
+                    <span className="ml-auto text-[10px] font-medium text-slate-300">{t.value}</span>
+                    <span className="text-[10px] text-slate-600">({pct}%)</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        <p className="py-8 text-center text-xs text-slate-600">Sem entregas no período selecionado</p>
+      )}
+    </div>
+
     <div className="grid gap-4 lg:grid-cols-3">
       {/* Por Status - Bar chart */}
       <div className="rounded-lg border border-border/40 bg-surface2 p-4">
@@ -123,5 +238,6 @@ export default function DashboardCharts({ byStatus, byService, byPriority }: Das
         </div>
       </div>
     </div>
+    </>
   );
 }

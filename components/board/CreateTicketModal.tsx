@@ -52,7 +52,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [reporterId, setReporterId] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [sprintId, setSprintId] = useState('');
-    const [parentId, setParentId] = useState('');
+    const [clientId, setClientId] = useState('');
     const [createAnother, setCreateAnother] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +62,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [categories, setCategories] = useState<SelectItem[]>([]);
     const [sprints, setSprints] = useState<SelectItem[]>([]);
     const [allServices, setAllServices] = useState<SelectItem[]>(initialServices);
-    const [parentTickets, setParentTickets] = useState<Array<{ id: string; title: string; ticket_key?: string }>>([]);
+    const [clients, setClients] = useState<SelectItem[]>([]);
 
     useImperativeHandle(ref, () => ({
       open: (presetStatusId?: string) => {
@@ -76,21 +76,18 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
       if (!isOpen) return;
       async function load() {
         try {
-          const [mRes, cRes, sRes, svRes] = await Promise.all([
+          const [mRes, cRes, sRes, svRes, clRes] = await Promise.all([
             fetch('/api/options?type=members'),
             fetch('/api/options?type=categories'),
             fetch('/api/options?type=sprints'),
             fetch('/api/options?type=services'),
+            fetch('/api/options?type=clients'),
           ]);
           if (mRes.ok) setMembers(await mRes.json());
           if (cRes.ok) setCategories(await cRes.json());
           if (sRes.ok) setSprints(await sRes.json());
           if (svRes.ok) setAllServices(await svRes.json());
-          // Carregar tickets para seleção de pai
-          try {
-            const tRes = await fetch('/api/tickets');
-            if (tRes.ok) setParentTickets(await tRes.json());
-          } catch { /* parent list is optional */ }
+          if (clRes.ok) setClients(await clRes.json());
         } catch (err) { console.error('Erro ao carregar opções:', err); }
       }
       load();
@@ -136,7 +133,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
             description: description.trim(),
             priority,
             due_date: dueDate || null,
-            parent_id: parentId || null,
+            client_id: clientId || null,
             category_id: categoryId || null,
             sprint_id: sprintId || null,
           })
@@ -176,7 +173,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
       setReporterId('');
       setCategoryId('');
       setSprintId('');
-      setParentId('');
+      setClientId('');
       setError('');
     }
 
@@ -320,16 +317,15 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
                     </select>
                   </div>
 
-                  {/* Pai */}
+                  {/* Cliente */}
                   <div>
-                    <label className={labelClass}>Pai</label>
-                    <select value={parentId} onChange={(e) => setParentId(e.target.value)} className={selectClass}>
-                      <option value="">Selecionar pai</option>
-                      {parentTickets.map((t) => (
-                        <option key={t.id} value={t.id}>{t.ticket_key ? `${t.ticket_key} - ` : ''}{t.title}</option>
+                    <label className={labelClass}>Cliente</label>
+                    <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={selectClass}>
+                      <option value="">Selecionar cliente</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
-                    <p className="mt-1 text-[11px] text-slate-600">Sua hierarquia de tipos do ticket determina os tickets que você pode selecionar aqui.</p>
                   </div>
 
                   {/* Categorias */}

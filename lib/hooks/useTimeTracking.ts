@@ -9,6 +9,7 @@ export interface TimeEntry {
   ended_at: string | null;
   duration_minutes: number | null;
   is_running: boolean;
+  is_billable: boolean;
   member_name: string;
 }
 
@@ -77,12 +78,39 @@ export function useTimeTracking(ticketId: string) {
     return sum + (e.duration_minutes || 0);
   }, 0);
 
+  const billableMinutes = entries.reduce((sum, e) => {
+    if (e.is_running) return sum;
+    if (e.is_billable) return sum + (e.duration_minutes || 0);
+    return sum;
+  }, 0);
+
+  const nonBillableMinutes = entries.reduce((sum, e) => {
+    if (e.is_running) return sum;
+    if (!e.is_billable) return sum + (e.duration_minutes || 0);
+    return sum;
+  }, 0);
+
+  const logManualEntry = useCallback(async (durationMinutes: number, description: string, isBillable: boolean) => {
+    await fetch('/api/time-entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticket_id: ticketId,
+        action: 'log',
+        duration_minutes: durationMinutes,
+        description,
+        is_billable: isBillable,
+      }),
+    });
+    await fetchEntries();
+  }, [ticketId, fetchEntries]);
+
   const deleteEntry = useCallback(async (entryId: string) => {
     await fetch(`/api/time-entries?id=${entryId}`, { method: 'DELETE' });
     await fetchEntries();
   }, [fetchEntries]);
 
-  return { entries, loading, runningEntry, elapsed, totalMinutes, startTimer, stopTimer, deleteEntry, refetch: fetchEntries };
+  return { entries, loading, runningEntry, elapsed, totalMinutes, billableMinutes, nonBillableMinutes, startTimer, stopTimer, deleteEntry, logManualEntry, refetch: fetchEntries };
 }
 
 export function formatDuration(totalSeconds: number): string {

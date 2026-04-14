@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Users, Columns3, Tag, Layers, Type, Smile, Webhook, Link2, MessageCircle } from 'lucide-react';
+import { Settings, Users, Building2, Columns3, Tag, Layers, Type, Smile, Webhook, Link2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import GeneralSettings from './GeneralSettings';
 import MembersSettings from './MembersSettings';
@@ -10,14 +10,16 @@ import ServicesSettings from './ServicesSettings';
 import CategoriesSettings from './CategoriesSettings';
 import TicketTypesSettings from './TicketTypesSettings';
 import QuickReactionsSettings from './QuickReactionsSettings';
+import ClientsSettings from './ClientsSettings';
 import WebhookSettings from './WebhookSettings';
 import ClockifySettings from './ClockifySettings';
 import WhatsAppSettings from './WhatsAppSettings';
 
-type SettingsTab = 'general' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'reactions' | 'webhooks' | 'clockify' | 'whatsapp';
+type SettingsTab = 'general' | 'clients' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'reactions' | 'webhooks' | 'clockify' | 'whatsapp';
 
 const tabs: { key: SettingsTab; label: string; icon: React.ElementType; section?: string }[] = [
   { key: 'general', label: 'Geral', icon: Settings },
+  { key: 'clients', label: 'Clientes', icon: Building2 },
   { key: 'members', label: 'Membros', icon: Users },
   { key: 'statuses', label: 'Colunas (Status)', icon: Columns3 },
   { key: 'services', label: 'Serviços/Produtos', icon: Tag },
@@ -70,6 +72,7 @@ export default function SettingsView() {
         {/* Content */}
         <div className="flex-1">
           {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'clients' && <ClientsSettings />}
           {activeTab === 'members' && <MembersSettings />}
           {activeTab === 'statuses' && <StatusesSettings />}
           {activeTab === 'services' && <ServicesSettings />}

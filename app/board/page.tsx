@@ -13,6 +13,10 @@ type BoardTicket = {
   priority: string | null;
   ticket_key: string | null;
   type_icon: string | null;
+  type_name: string | null;
+  category_name: string | null;
+  completed_at: string | null;
+  client_name: string | null;
 };
 
 type ServiceItem = { id: string; name: string };
@@ -39,7 +43,11 @@ function mapTicket(ticket: BoardTicket) {
     assignee: ticket.assignee_name ?? 'Sem responsável',
     priority: ticket.priority ?? 'medium',
     ticketKey: ticket.ticket_key ?? ticket.id.substring(0, 8),
-    typeIcon: ticket.type_icon ?? '📋'
+    typeIcon: ticket.type_icon ?? '📋',
+    typeName: ticket.type_name ?? undefined,
+    categoryName: ticket.category_name ?? undefined,
+    completedAt: ticket.completed_at ?? null,
+    clientName: ticket.client_name ?? null,
   };
 }
 
@@ -55,7 +63,11 @@ export default async function BoardPage() {
       assignee_name,
       status_name,
       ticket_key,
-      type_icon
+      type_icon,
+      type_name,
+      category_name,
+      to_char(completed_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS completed_at,
+      (SELECT cl.name FROM clients cl WHERE cl.id = client_id) AS client_name
     FROM tickets_full
     WHERE is_archived = false
     ORDER BY created_at DESC`

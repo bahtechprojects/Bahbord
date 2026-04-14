@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
-import { Calendar } from 'lucide-react';
+import { Calendar, Check } from 'lucide-react';
 import { useBoardShell } from './BoardShell';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 
@@ -41,11 +41,15 @@ interface TicketCardProps {
   priority: string;
   ticketKey: string;
   typeIcon: string;
+  typeName?: string;
+  categoryName?: string;
+  completedAt?: string | null;
+  clientName?: string | null;
   active: boolean;
   onClick: () => void;
 }
 
-export default function TicketCard({ id, title, service, serviceColor, due, assignee, priority, ticketKey, typeIcon, active, onClick }: TicketCardProps) {
+export default function TicketCard({ id, title, service, serviceColor, due, assignee, priority, ticketKey, typeIcon, typeName, categoryName, completedAt, clientName, active, onClick }: TicketCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const { openTicket } = useBoardShell();
@@ -89,6 +93,27 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
           {title}
         </h3>
 
+        {/* Info row: client, type, category */}
+        {(clientName || typeName || categoryName) && (
+          <div className="mb-1 flex items-center gap-1 flex-wrap">
+            {clientName && (
+              <span className="text-[9px] text-slate-400 truncate max-w-[90px]" title={clientName}>
+                {clientName}
+              </span>
+            )}
+            {typeName && (
+              <span className="rounded px-1 py-[0.5px] text-[8px] font-semibold bg-indigo-500/15 text-indigo-400">
+                {typeName}
+              </span>
+            )}
+            {categoryName && (
+              <span className="rounded px-1 py-[0.5px] text-[8px] font-medium bg-white/[0.04] text-slate-500">
+                {categoryName}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center gap-1">
           {hasService && svc && (
@@ -99,12 +124,17 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
               {service}
             </span>
           )}
-          {hasDue && (
+          {completedAt ? (
+            <span className="flex items-center gap-0.5 text-[9px] text-emerald-500">
+              <Check size={8} strokeWidth={2} />
+              {completedAt}
+            </span>
+          ) : hasDue ? (
             <span className="flex items-center gap-0.5 text-[9px] text-slate-600">
               <Calendar size={8} strokeWidth={1.5} />
               {due}
             </span>
-          )}
+          ) : null}
           <span className="flex-1" />
           {initials && (
             <div

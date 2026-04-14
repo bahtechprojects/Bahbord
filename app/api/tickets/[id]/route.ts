@@ -13,6 +13,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
         tf.status_id, tf.status_name, tf.status_color, tf.status_position, tf.is_done,
         tf.service_id, tf.service_name, tf.service_color,
         tf.category_id, tf.category_name,
+        tf.client_id, tf.client_name, tf.client_color,
         tf.assignee_id, tf.assignee_name,
         tf.reporter_id, tf.reporter_name,
         tf.sprint_name,
@@ -65,6 +66,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     sprint_id: 'sprint_id',
     ticket_type_id: 'ticket_type_id',
     parent_id: 'parent_id',
+    client_id: 'client_id',
   };
 
   const sets: string[] = [];

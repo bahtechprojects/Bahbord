@@ -19,6 +19,10 @@ interface ColumnCard {
   priority: string;
   ticketKey: string;
   typeIcon: string;
+  typeName?: string;
+  categoryName?: string;
+  completedAt?: string | null;
+  clientName?: string | null;
 }
 
 interface ColumnProps {

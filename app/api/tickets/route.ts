@@ -132,10 +132,11 @@ export async function POST(request: Request) {
         due_date,
         parent_id,
         sprint_id,
+        client_id,
         created_at,
         updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
         NOW(), NOW()
       ) RETURNING *`,
       [
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
         body.due_date ?? null,
         body.parent_id ?? null,
         body.sprint_id ?? null,
+        body.client_id ?? null,
       ]
     );
 
