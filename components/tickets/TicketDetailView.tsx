@@ -13,6 +13,7 @@ import TicketSidebar from './TicketSidebar';
 import TimeTracker from './TimeTracker';
 import DevLinks from './DevLinks';
 import AttachmentList from './AttachmentList';
+import AccessLinks from './AccessLinks';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { DetailSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
@@ -260,6 +261,11 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
           {/* Desenvolvimento */}
           <section className="border-b border-white/[0.04] pb-5 mb-5">
             <DevLinks ticketId={ticket.id} />
+          </section>
+
+          {/* Acessos */}
+          <section className="border-b border-white/[0.04] pb-5 mb-5">
+            <AccessLinks ticketId={ticket.id} />
           </section>
 
           {/* Anexos */}

@@ -13,6 +13,7 @@ import DevLinks from './DevLinks';
 import TicketSidebar from './TicketSidebar';
 import TimeTracker from './TimeTracker';
 import AttachmentList from './AttachmentList';
+import AccessLinks from './AccessLinks';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { useToast } from '@/components/ui/Toast';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
@@ -264,6 +265,11 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                     {/* Desenvolvimento */}
                     <section className="mb-6 border-t border-white/[0.04] pt-5">
                       <DevLinks ticketId={ticket.id} />
+                    </section>
+
+                    {/* Acessos */}
+                    <section className="mb-6 border-t border-white/[0.04] pt-5">
+                      <AccessLinks ticketId={ticket.id} />
                     </section>
 
                     {/* Anexos */}
