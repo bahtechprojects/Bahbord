@@ -52,7 +52,7 @@ export default function KanbanBoard({ initialItems }: KanbanBoardProps) {
     priorities: [],
   });
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   // Supabase Realtime — atualizar board quando tickets mudam
   useEffect(() => {

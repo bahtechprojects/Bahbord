@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
@@ -46,6 +46,7 @@ interface TicketCardProps {
 }
 
 export default function TicketCard({ id, title, service, due, assignee, priority, ticketKey, typeIcon, active, onClick }: TicketCardProps) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
@@ -56,33 +57,37 @@ export default function TicketCard({ id, title, service, due, assignee, priority
 
   const hasService = service && service !== 'Sem serviço';
 
+  function handleClick(e: React.MouseEvent) {
+    // O PointerSensor com distance:8 permite click normal.
+    // Se isDragging, não navegar.
+    if (isDragging) return;
+    e.preventDefault();
+    router.push(`/ticket/${id}`);
+  }
+
   return (
     <article
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
+      onClick={handleClick}
       className={cn(
-        'group cursor-grab rounded-md border border-white/[0.06] bg-[#22252a] transition-all duration-150 active:cursor-grabbing',
+        'group cursor-pointer rounded-md border border-white/[0.06] bg-[#22252a] transition-all duration-150',
         'hover:border-white/[0.1] hover:bg-[#272b31]',
         'border-l-[3px]',
         prio.border,
-        isDragging && 'opacity-40 rotate-1 shadow-2xl scale-[1.02]',
+        isDragging && 'opacity-40 rotate-1 shadow-2xl scale-[1.02] cursor-grabbing',
         active && 'ring-1 ring-blue-500/40'
       )}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
     >
       <div className="p-3">
         {/* Top: key + type */}
         <div className="mb-2 flex items-center gap-1.5">
           <span className="text-[13px]">{typeIcon}</span>
-          <Link
-            href={`/ticket/${id}`}
-            className="font-mono text-[11px] font-medium text-slate-500 transition hover:text-blue-400"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <span className="font-mono text-[11px] font-medium text-slate-500">
             {ticketKey}
-          </Link>
+          </span>
         </div>
 
         {/* Title */}
