@@ -62,5 +62,24 @@ export function useSubtasks(ticketId: string) {
     }
   }, [fetchSubtasks]);
 
-  return { subtasks, loading, addSubtask, toggleSubtask, deleteSubtask, refetch: fetchSubtasks };
+  const reorderSubtasks = useCallback(async (reordered: Subtask[]) => {
+    setSubtasks(reordered);
+    try {
+      await Promise.all(
+        reordered.map((s, index) =>
+          fetch('/api/subtasks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: s.id, position: index }),
+          })
+        )
+      );
+      await fetchSubtasks();
+    } catch (err) {
+      console.error('Erro ao reordenar subtasks:', err);
+      await fetchSubtasks();
+    }
+  }, [fetchSubtasks]);
+
+  return { subtasks, loading, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks, refetch: fetchSubtasks };
 }

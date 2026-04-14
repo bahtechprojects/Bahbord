@@ -51,15 +51,10 @@ export default function LinkedTickets({ ticketId }: LinkedTicketsProps) {
     setSearchQuery(q);
     if (q.length < 2) { setSearchResults([]); return; }
     try {
-      const res = await fetch('/api/tickets');
+      const res = await fetch(`/api/tickets/search?q=${encodeURIComponent(q)}`);
       if (res.ok) {
-        const all = await res.json();
-        const filtered = all.filter((t: SearchResult) =>
-          t.id !== ticketId &&
-          (t.title?.toLowerCase().includes(q.toLowerCase()) ||
-           t.ticket_key?.toLowerCase().includes(q.toLowerCase()))
-        );
-        setSearchResults(filtered.slice(0, 8));
+        const results: SearchResult[] = await res.json();
+        setSearchResults(results.filter((t) => t.id !== ticketId).slice(0, 8));
       }
     } catch (err) { console.error('Erro ao buscar tickets:', err); }
   }

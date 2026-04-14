@@ -192,9 +192,9 @@ export default function ListView({ tickets, statuses, members }: ListViewProps) 
         <SortHeader field="title" className="flex-1">Título</SortHeader>
         <SortHeader field="status_name" className="w-32 shrink-0">Status</SortHeader>
         <SortHeader field="priority" className="w-24 shrink-0">Prioridade</SortHeader>
-        <span className="w-28 shrink-0">Serviço</span>
-        <SortHeader field="assignee_name" className="w-28 shrink-0">Responsável</SortHeader>
-        <SortHeader field="due" className="w-24 shrink-0 text-right">Data limite</SortHeader>
+        <span className="hidden md:block w-28 shrink-0">Serviço</span>
+        <SortHeader field="assignee_name" className="hidden md:flex w-28 shrink-0">Responsável</SortHeader>
+        <SortHeader field="due" className="hidden lg:flex w-24 shrink-0 text-right">Data limite</SortHeader>
       </div>
 
       {/* Rows */}
@@ -240,9 +240,9 @@ export default function ListView({ tickets, statuses, members }: ListViewProps) 
                     {prio.label}
                   </span>
                 </span>
-                <span className="w-28 shrink-0 text-[11px] text-slate-400">{t.service_name || '-'}</span>
-                <span className="w-28 shrink-0 text-[11px] text-slate-500">{t.assignee_name || '-'}</span>
-                <span className="w-24 shrink-0 text-right text-[11px] text-slate-600">{t.due || '-'}</span>
+                <span className="hidden md:block w-28 shrink-0 text-[11px] text-slate-400">{t.service_name || '-'}</span>
+                <span className="hidden md:block w-28 shrink-0 text-[11px] text-slate-500">{t.assignee_name || '-'}</span>
+                <span className="hidden lg:block w-24 shrink-0 text-right text-[11px] text-slate-600">{t.due || '-'}</span>
               </Link>
             </div>
           );

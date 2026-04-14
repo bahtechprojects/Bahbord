@@ -207,7 +207,7 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
       </div>
 
       {/* Two column layout */}
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left column — content */}
         <div className="flex-1 min-w-0 space-y-0">
           {/* Descrição */}
@@ -274,7 +274,7 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
         </div>
 
         {/* Right column — sidebar */}
-        <div className="w-[320px] shrink-0">
+        <div className="w-full lg:w-[320px] shrink-0">
           <TicketSidebar ticket={ticket} onUpdate={updateField} />
           <div className="mt-4">
             <TimeTracker ticketId={ticket.id} />

@@ -1,55 +1,37 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+export function middleware(req: NextRequest) {
+  const memberId = req.cookies.get('bahjira-member-id')?.value;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value);
-            res.cookies.set(name, value, options);
-          });
-        }
-      }
-    }
-  );
+  const { pathname } = req.nextUrl;
 
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
-
-  const isAuthPage = req.nextUrl.pathname === '/login';
+  // Allow public paths through without auth check
   const isPublicPath =
-    req.nextUrl.pathname.startsWith('/api') ||
-    req.nextUrl.pathname.startsWith('/_next') ||
-    req.nextUrl.pathname.startsWith('/favicon.ico');
+    pathname === '/login' ||
+    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/api/options') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon.ico');
 
   if (isPublicPath) {
-    return res;
+    // If logged in and on login page, redirect to board
+    if (memberId && pathname === '/login') {
+      return NextResponse.redirect(new URL('/board', req.url));
+    }
+    return NextResponse.next();
   }
 
-  if (!session && !isAuthPage) {
-    const loginUrl = new URL('/login', req.url);
-    return NextResponse.redirect(loginUrl);
+  // Redirect to login if no auth cookie
+  if (!memberId) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  if (session && isAuthPage) {
-    const boardUrl = new URL('/board', req.url);
-    return NextResponse.redirect(boardUrl);
-  }
-
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/board/:path*', '/ticket/:path*', '/login', '/']
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 };

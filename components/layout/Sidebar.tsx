@@ -67,7 +67,7 @@ export default function Sidebar() {
           </div>
         )}
         {/* Close button on mobile */}
-        <button onClick={() => setMobileOpen(false)} className="text-slate-500 hover:text-slate-300 lg:hidden">
+        <button onClick={() => setMobileOpen(false)} className="text-slate-500 hover:text-slate-300 md:hidden">
           <X size={18} />
         </button>
       </div>
@@ -131,7 +131,7 @@ export default function Sidebar() {
       </div>
 
       {/* Collapse toggle (desktop only) */}
-      <div className="hidden px-3 pb-3 lg:block">
+      <div className="hidden px-3 pb-3 md:block">
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
@@ -150,19 +150,19 @@ export default function Sidebar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-50 rounded-md bg-[#232730] p-2 text-slate-400 shadow-lg hover:text-white lg:hidden"
+        className="fixed left-3 top-3 z-50 rounded-md bg-[#232730] p-2 text-slate-400 shadow-lg hover:text-white md:hidden"
       >
         <Menu size={20} />
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-fade-in" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Mobile sidebar */}
       <aside className={cn(
-        'fixed inset-y-0 left-0 z-50 w-[240px] flex-col bg-[#161819] transition-transform duration-200 lg:hidden',
+        'fixed inset-y-0 left-0 z-50 w-[240px] flex-col bg-[#161819] transition-transform duration-200 md:hidden',
         mobileOpen ? 'translate-x-0 flex' : '-translate-x-full'
       )}>
         {sidebarContent}
@@ -170,7 +170,7 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className={cn(
-        'hidden shrink-0 flex-col bg-[#161819] transition-all duration-200 lg:flex',
+        'hidden shrink-0 flex-col bg-[#161819] transition-all duration-200 md:flex',
         collapsed ? 'w-[56px]' : 'w-[240px]'
       )}>
         {sidebarContent}

@@ -243,9 +243,9 @@ export default function KanbanBoard({ initialItems, wipLimits = {} }: KanbanBoar
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 pb-2">
+        <div className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory md:snap-none">
           {columns.map((column) => (
-            <div key={column.id} className="w-[260px] shrink-0">
+            <div key={column.id} className="w-[260px] shrink-0 snap-start">
               <KanbanColumn
                 id={column.id}
                 title={column.title}

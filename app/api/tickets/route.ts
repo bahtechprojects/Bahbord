@@ -1,24 +1,61 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 
-export async function GET() {
-  const result = await query(
-    `SELECT
-      t.id,
-      t.title,
-      to_char(t.due_date AT TIME ZONE 'UTC', 'DD Mon YYYY') AS due_date,
-      s.name AS status,
-      sv.name AS service,
-      m.display_name AS assignee
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const pageParam = searchParams.get('page');
+  const limitParam = searchParams.get('limit');
+
+  const baseQuery = `
     FROM tickets t
     LEFT JOIN statuses s ON s.id = t.status_id
     LEFT JOIN services sv ON sv.id = t.service_id
     LEFT JOIN members m ON m.id = t.assignee_id
-    WHERE t.is_archived = false
-    ORDER BY t.created_at DESC`
-  );
+    WHERE t.is_archived = false`;
 
-  return NextResponse.json(result.rows);
+  // If no page param, return all results (backward compat for board view)
+  if (!pageParam) {
+    const result = await query(
+      `SELECT
+        t.id,
+        t.title,
+        to_char(t.due_date AT TIME ZONE 'UTC', 'DD Mon YYYY') AS due_date,
+        s.name AS status,
+        sv.name AS service,
+        m.display_name AS assignee
+      ${baseQuery}
+      ORDER BY t.created_at DESC`
+    );
+    return NextResponse.json(result.rows);
+  }
+
+  const page = Math.max(1, parseInt(pageParam) || 1);
+  const limit = Math.max(1, Math.min(200, parseInt(limitParam || '50') || 50));
+  const offset = (page - 1) * limit;
+
+  const [countResult, result] = await Promise.all([
+    query(`SELECT COUNT(*) AS total ${baseQuery}`),
+    query(
+      `SELECT
+        t.id,
+        t.title,
+        to_char(t.due_date AT TIME ZONE 'UTC', 'DD Mon YYYY') AS due_date,
+        s.name AS status,
+        sv.name AS service,
+        m.display_name AS assignee
+      ${baseQuery}
+      ORDER BY t.created_at DESC
+      LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    ),
+  ]);
+
+  const total = parseInt(countResult.rows[0].total);
+
+  return NextResponse.json({
+    data: result.rows,
+    pagination: { page, limit, total },
+  });
 }
 
 export async function PATCH(request: Request) {
