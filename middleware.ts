@@ -9,10 +9,7 @@ export function middleware(req: NextRequest) {
   // Allow public paths through without auth check
   const isPublicPath =
     pathname === '/login' ||
-    pathname.startsWith('/api/auth/') ||
-    pathname.startsWith('/api/options') ||
-    pathname.startsWith('/api/quick-reactions') ||
-    pathname.startsWith('/api/webhooks') ||
+    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
     pathname.endsWith('.svg') ||
