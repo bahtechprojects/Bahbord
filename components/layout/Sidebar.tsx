@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard, Columns3, List, Inbox, Zap, Search, Settings,
@@ -30,6 +30,7 @@ export function useSidebar() { return useContext(SidebarContext); }
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [planningOpen, setPlanningOpen] = useState(true);
@@ -67,14 +68,14 @@ export default function Sidebar() {
   }, []);
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
-    const active = pathname === href;
+    const basePath = href.split('?')[0];
+    const active = pathname === basePath;
     return (
-      <Link
-        href={href as any}
-        onClick={() => setMobileOpen(false)}
+      <button
+        onClick={() => { setMobileOpen(false); router.push(href as any); router.refresh(); }}
         title={collapsed ? label : undefined}
         className={cn(
-          'flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
+          'flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
           active
             ? 'bg-white/[0.08] text-white'
             : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200',
@@ -84,7 +85,7 @@ export default function Sidebar() {
         <Icon size={16} strokeWidth={active ? 2 : 1.5} className={active ? 'text-blue-400' : 'text-slate-500'} />
         {!collapsed && label}
         {!collapsed && active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}
-      </Link>
+      </button>
     );
   }
 
@@ -139,18 +140,17 @@ export default function Sidebar() {
               <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Recentes</span>
               <div className="mt-1 mb-2 space-y-0.5">
                 {recentBoards.map((rb) => (
-                  <Link
+                  <button
                     key={rb.id}
-                    href={`/board?board_id=${rb.id}`}
-                    onClick={() => setBoard(rb.id)}
-                    className="flex items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                    onClick={() => { setBoard(rb.id); router.push(`/board?board_id=${rb.id}`); router.refresh(); setMobileOpen(false); }}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 text-left"
                   >
                     <Columns3 size={12} className="text-slate-600 shrink-0" />
                     <div className="min-w-0">
                       <span className="block truncate text-slate-400">{rb.name}</span>
                       <span className="text-[9px] text-slate-600">{rb.projectName}</span>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </>
@@ -180,15 +180,14 @@ export default function Sidebar() {
                   {active && (
                     <div className="ml-4 mt-0.5 space-y-0.5 border-l border-white/[0.08] pl-2">
                       {projectBoards.map((b) => (
-                        <Link
+                        <button
                           key={b.id}
-                          href={`/board?board_id=${b.id}`}
-                          onClick={() => setBoard(b.id)}
-                          className="flex items-center gap-1.5 truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                          onClick={() => { setBoard(b.id); router.push(`/board?board_id=${b.id}`); router.refresh(); setMobileOpen(false); }}
+                          className="flex w-full items-center gap-1.5 truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 text-left"
                         >
                           <Columns3 size={11} className="text-slate-600 shrink-0" />
                           {b.name}
-                        </Link>
+                        </button>
                       ))}
                       <Link
                         href="/boards"
