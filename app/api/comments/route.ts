@@ -34,16 +34,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
 
     const body = await request.json();
-    const { ticket_id, author_id, content } = body;
+    const { ticket_id, content } = body;
 
     if (!ticket_id || !content?.trim()) {
       return NextResponse.json({ error: 'ticket_id e content são obrigatórios' }, { status: 400 });
     }
 
-    let memberId = author_id;
+    // Usar membro autenticado como autor
+    let memberId = auth?.id;
     if (!memberId) {
       try {
         memberId = await getDefaultMemberId();
