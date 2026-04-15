@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
@@ -77,11 +78,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await getAuthMember();
     const body = await request.json();
     const { project_id, name, type, description } = body;
 
     if (!project_id || !name) {
       return NextResponse.json({ error: 'project_id e name são obrigatórios' }, { status: 400 });
+    }
+
+    // Verificar permissão: precisa ser project admin ou org admin
+    if (auth) {
+      if (!isAdmin(auth.role)) {
+        const projRole = await query(
+          `SELECT role FROM project_roles WHERE member_id = $1 AND project_id = $2`,
+          [auth.id, project_id]
+        );
+        if (projRole.rows[0]?.role !== 'admin') {
+          return NextResponse.json({ error: 'Apenas administradores do projeto podem criar boards' }, { status: 403 });
+        }
+      }
     }
 
     const validTypes = ['kanban', 'scrum', 'simple'];
@@ -96,7 +111,19 @@ export async function POST(request: Request) {
       [project_id, name, type || 'kanban', description || null]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    const board = result.rows[0];
+
+    // Dar board_role admin ao criador
+    if (auth) {
+      await query(
+        `INSERT INTO board_roles (board_id, member_id, role)
+         VALUES ($1, $2, 'admin')
+         ON CONFLICT DO NOTHING`,
+        [board.id, auth.id]
+      );
+    }
+
+    return NextResponse.json(board, { status: 201 });
   } catch (err) {
     console.error('POST /api/boards error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
@@ -105,6 +132,22 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const auth = await getAuthMember();
+    if (auth && !isAdmin(auth.role)) {
+      // Verificar se é board admin ou project admin
+      const body_check = await request.clone().json();
+      if (body_check.id) {
+        const boardRole = await query(`SELECT role FROM board_roles WHERE board_id = $1 AND member_id = $2`, [body_check.id, auth.id]);
+        const projRole = await query(
+          `SELECT pr.role FROM project_roles pr JOIN boards b ON b.project_id = pr.project_id WHERE b.id = $1 AND pr.member_id = $2`,
+          [body_check.id, auth.id]
+        );
+        if (boardRole.rows[0]?.role !== 'admin' && projRole.rows[0]?.role !== 'admin') {
+          return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+        }
+      }
+    }
+
     const body = await request.json();
     const { id, name, description } = body;
 
@@ -144,6 +187,11 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const auth = await getAuthMember();
+    if (auth && !isAdmin(auth.role)) {
+      return NextResponse.json({ error: 'Apenas administradores podem remover boards' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
