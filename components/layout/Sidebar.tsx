@@ -36,7 +36,7 @@ export default function Sidebar() {
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: string; name: string; prefix: string; color: string }>>([]);
   const [boards, setBoards] = useState<Array<{ id: string; name: string; type: string; project_id: string }>>([]);
-  const { currentProjectId, setProject } = useProject();
+  const { currentProjectId, recentBoards, setProject, setBoard } = useProject();
 
   useState(() => {
     fetch('/api/options?type=projects').then((r) => r.json()).then(setProjects).catch(() => {});
@@ -67,24 +67,21 @@ export default function Sidebar() {
 
   const sidebarContent = (
     <>
-      {/* Workspace header */}
-      <div className={cn('flex items-center gap-2.5 px-4 py-4', collapsed && 'justify-center px-2')}>
+      {/* Organization header (top level) */}
+      <div className={cn('flex items-center gap-2.5 px-4 py-3', collapsed && 'justify-center px-2')}>
         <img src="/logo-bah.svg" alt="Bah!" className="h-7 w-7 rounded-md object-contain shrink-0" />
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <span className="text-[13px] font-semibold text-white truncate">Bah!Company</span>
-            </div>
-            <span className="text-[10px] text-slate-500">Projeto de software</span>
+            <span className="text-[14px] font-bold text-white truncate block">BahTech</span>
+            <span className="text-[10px] text-slate-500">Organização</span>
           </div>
         )}
-        {/* Close button on mobile */}
         <button onClick={() => setMobileOpen(false)} className="text-slate-500 hover:text-slate-300 md:hidden">
           <X size={18} />
         </button>
       </div>
 
-      {!collapsed && <div className="mx-3 mb-3 h-px bg-white/[0.06]" />}
+      {!collapsed && <div className="mx-3 mb-1 h-px bg-white/[0.06]" />}
 
       {/* Search */}
       {!collapsed ? (
@@ -110,10 +107,34 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Project selector */}
+      {/* Hierarchy: Projects → Boards */}
       {!collapsed && projects.length > 0 && (
         <div className="px-3 pb-2">
-          <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Projeto</span>
+          {/* Recent boards */}
+          {recentBoards.length > 0 && (
+            <>
+              <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Recentes</span>
+              <div className="mt-1 mb-2 space-y-0.5">
+                {recentBoards.map((rb) => (
+                  <Link
+                    key={rb.id}
+                    href="/board"
+                    onClick={() => setBoard(rb.id)}
+                    className="flex items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                  >
+                    <Columns3 size={12} className="text-slate-600 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="block truncate text-slate-400">{rb.name}</span>
+                      <span className="text-[9px] text-slate-600">{rb.projectName}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Projects with boards */}
+          <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Projetos</span>
           <div className="mt-1 space-y-0.5">
             {projects.map((p) => {
               const active = currentProjectId === p.id;
@@ -127,22 +148,31 @@ export default function Sidebar() {
                       active ? 'bg-white/[0.08] text-white' : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
                     )}
                   >
-                    <span className="flex h-5 w-5 items-center justify-center rounded text-[8px] font-bold text-white" style={{ backgroundColor: p.color }}>
+                    <span className="flex h-5 w-5 items-center justify-center rounded text-[8px] font-bold text-white shrink-0" style={{ backgroundColor: p.color }}>
                       {p.prefix.substring(0, 2)}
                     </span>
                     <span className="truncate">{p.name}</span>
+                    <ChevronRight size={11} className={cn('ml-auto shrink-0 text-slate-600 transition-transform', active && 'rotate-90')} />
                   </button>
-                  {active && projectBoards.length > 0 && (
-                    <div className="ml-5 mt-0.5 space-y-0.5 border-l border-white/[0.06] pl-2">
+                  {active && (
+                    <div className="ml-4 mt-0.5 space-y-0.5 border-l border-white/[0.08] pl-2">
                       {projectBoards.map((b) => (
                         <Link
                           key={b.id}
                           href="/board"
-                          className="block truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                          onClick={() => setBoard(b.id)}
+                          className="flex items-center gap-1.5 truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
                         >
+                          <Columns3 size={11} className="text-slate-600 shrink-0" />
                           {b.name}
                         </Link>
                       ))}
+                      <Link
+                        href="/boards"
+                        className="block px-2 py-1 text-[10px] text-slate-600 hover:text-blue-400"
+                      >
+                        Ver todos os boards
+                      </Link>
                     </div>
                   )}
                 </div>
