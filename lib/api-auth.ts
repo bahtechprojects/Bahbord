@@ -50,12 +50,27 @@ export async function getAuthMember(): Promise<AuthMember | null> {
     const displayName = user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress || 'Novo Membro';
     const email = user.emailAddresses[0]?.emailAddress || '';
 
+    // First try to find by email (member may exist from manual creation)
+    const existingByEmail = await query<{ id: string }>(
+      `UPDATE members SET clerk_user_id = $1 WHERE email = $2 AND clerk_user_id IS NULL RETURNING id`,
+      [userId, email]
+    );
+
+    if (existingByEmail.rows[0]) {
+      const memberData = await query<AuthMember>(
+        `SELECT m.id, m.workspace_id, m.display_name, m.email, COALESCE(orr.role, 'viewer') AS role
+         FROM members m LEFT JOIN org_roles orr ON orr.member_id = m.id AND orr.workspace_id = m.workspace_id
+         WHERE m.id = $1`, [existingByEmail.rows[0].id]
+      );
+      if (memberData.rows[0]) return { ...memberData.rows[0], clerk_id: userId };
+    }
+
+    // Create new member
     const newMember = await query<{ id: string }>(
       `INSERT INTO members (workspace_id, user_id, clerk_user_id, display_name, email, role, is_approved)
-       VALUES ($1, $2, $3, $4, $5, 'member', false)
-       ON CONFLICT (workspace_id, user_id) DO UPDATE SET clerk_user_id = $3
+       VALUES ($1, gen_random_uuid(), $2, $3, $4, 'member', false)
        RETURNING id`,
-      [workspaceId, userId, userId, displayName, email]
+      [workspaceId, userId, displayName, email]
     );
 
     if (!newMember.rows[0]) return null;
