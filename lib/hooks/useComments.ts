@@ -56,7 +56,6 @@ export function useComments(ticketId: string) {
   }
 
   async function deleteComment(id: string) {
-    if (!confirm('Remover este comentário?')) return;
     try {
       const res = await fetch(`/api/comments?id=${id}`, { method: 'DELETE' });
       if (res.ok) await fetchComments();

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 interface Category {
   id: string;
@@ -13,6 +14,7 @@ export default function CategoriesSettings() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const { confirm } = useConfirm();
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#f59e0b');
 
@@ -58,7 +60,13 @@ export default function CategoriesSettings() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remover esta categoria?')) return;
+    const ok = await confirm({
+      title: 'Remover categoria',
+      message: 'Tem certeza que deseja remover esta categoria?',
+      confirmText: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     const res = await fetch(`/api/settings?table=categories&id=${id}`, { method: 'DELETE' });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

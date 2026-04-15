@@ -12,6 +12,7 @@ import MentionInput from './MentionInput';
 import Avatar from '@/components/ui/Avatar';
 import { cn } from '@/lib/utils/cn';
 import { useUser } from '@clerk/nextjs';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 interface Comment {
   id: string;
@@ -44,6 +45,7 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   const { activities } = useActivityLog(ticketId);
   const { comments, isSubmitting, submitComment: rawSubmitComment, editComment, deleteComment } = useComments(ticketId);
   const { user } = useUser();
+  const { confirm } = useConfirm();
 
   async function submitComment(text: string) {
     await rawSubmitComment(text);
@@ -55,7 +57,15 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
     if (ok) setEditingId(null);
   }
 
-  const handleDeleteComment = deleteComment;
+  async function handleDeleteComment(id: string) {
+    const ok = await confirm({
+      title: 'Remover comentário',
+      message: 'Tem certeza que deseja remover este comentário? Esta ação não pode ser desfeita.',
+      confirmText: 'Remover',
+      variant: 'danger',
+    });
+    if (ok) await deleteComment(id);
+  }
 
   function timeAgo(dateStr: string) {
     try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: ptBR }); }

@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { ThemeProvider } from '@/lib/theme-context';
 import { ProjectProvider } from '@/lib/project-context';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 import SearchModal from '@/components/ui/SearchModal';
 import KeyboardShortcuts from '@/components/ui/KeyboardShortcuts';
 import './globals.css';
@@ -29,9 +30,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <ProjectProvider>
               <ToastProvider>
-                {children}
-                <SearchModal />
-                <KeyboardShortcuts />
+                <ConfirmProvider>
+                  {children}
+                  <SearchModal />
+                  <KeyboardShortcuts />
+                </ConfirmProvider>
               </ToastProvider>
             </ProjectProvider>
           </ThemeProvider>

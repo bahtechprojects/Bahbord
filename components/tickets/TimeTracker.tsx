@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Play, Square, Clock, Trash2, Plus } from 'lucide-react';
 import { useTimeTracking, formatDuration, formatMinutes } from '@/lib/hooks/useTimeTracking';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmModal';
 
 interface TimeTrackerProps {
   ticketId: string;
@@ -12,6 +13,7 @@ interface TimeTrackerProps {
 export default function TimeTracker({ ticketId }: TimeTrackerProps) {
   const { entries, runningEntry, elapsed, totalMinutes, billableMinutes, nonBillableMinutes, startTimer, stopTimer, deleteEntry, logManualEntry } = useTimeTracking(ticketId);
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [showManualForm, setShowManualForm] = useState(false);
   const [manualHours, setManualHours] = useState(0);
   const [manualMinutes, setManualMinutes] = useState(30);
@@ -20,7 +22,13 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleDeleteEntry(id: string) {
-    if (!confirm('Remover este registro de tempo?')) return;
+    const ok = await confirm({
+      title: 'Remover registro',
+      message: 'Tem certeza que deseja remover este registro de tempo?',
+      confirmText: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await deleteEntry(id);
       toast('Registro removido', 'success');
