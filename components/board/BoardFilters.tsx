@@ -10,6 +10,7 @@ export interface BoardFilterState {
   assignees: string[];
   types: string[];
   priorities: string[];
+  projects: string[];
 }
 
 interface BoardFiltersProps {
@@ -18,6 +19,7 @@ interface BoardFiltersProps {
   availableServices: string[];
   availableAssignees: string[];
   availableTypes: { icon: string; name: string }[];
+  availableProjects?: { id: string; name: string }[];
 }
 
 const priorities = [
@@ -27,11 +29,11 @@ const priorities = [
   { id: 'low', label: 'Baixa', dot: 'bg-slate-400' },
 ];
 
-export default function BoardFilters({ filters, onFiltersChange, availableServices, availableAssignees, availableTypes }: BoardFiltersProps) {
-  const hasActiveFilters = filters.search || filters.services.length > 0 || filters.assignees.length > 0 || filters.types.length > 0 || filters.priorities.length > 0;
-  const activeCount = filters.services.length + filters.assignees.length + filters.types.length + filters.priorities.length;
+export default function BoardFilters({ filters, onFiltersChange, availableServices, availableAssignees, availableTypes, availableProjects = [] }: BoardFiltersProps) {
+  const hasActiveFilters = filters.search || filters.services.length > 0 || filters.assignees.length > 0 || filters.types.length > 0 || filters.priorities.length > 0 || filters.projects.length > 0;
+  const activeCount = filters.services.length + filters.assignees.length + filters.types.length + filters.priorities.length + filters.projects.length;
 
-  function toggleFilter(key: keyof Pick<BoardFilterState, 'services' | 'assignees' | 'types' | 'priorities'>, value: string) {
+  function toggleFilter(key: keyof Pick<BoardFilterState, 'services' | 'assignees' | 'types' | 'priorities' | 'projects'>, value: string) {
     const current = filters[key];
     const updated = current.includes(value)
       ? current.filter((v) => v !== value)
@@ -40,7 +42,7 @@ export default function BoardFilters({ filters, onFiltersChange, availableServic
   }
 
   function clearFilters() {
-    onFiltersChange({ search: '', services: [], assignees: [], types: [], priorities: [] });
+    onFiltersChange({ search: '', services: [], assignees: [], types: [], priorities: [], projects: [] });
   }
 
   return (
@@ -62,19 +64,19 @@ export default function BoardFilters({ filters, onFiltersChange, availableServic
       {/* Divider */}
       <div className="h-5 w-px bg-white/[0.06]" />
 
-      {/* Service pills */}
-      {availableServices.map((s) => (
+      {/* Project pills */}
+      {availableProjects.map((p) => (
         <button
-          key={s}
-          onClick={() => toggleFilter('services', s)}
+          key={p.id}
+          onClick={() => toggleFilter('projects', p.id)}
           className={cn(
             'rounded-md px-2.5 py-[5px] text-[11px] font-medium transition-all duration-100',
-            filters.services.includes(s)
-              ? 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30'
+            filters.projects.includes(p.id)
+              ? 'bg-violet-500/15 text-violet-400 ring-1 ring-violet-500/30'
               : 'bg-white/[0.03] text-slate-500 ring-1 ring-white/[0.04] hover:bg-white/[0.06] hover:text-slate-300'
           )}
         >
-          {s}
+          {p.name}
         </button>
       ))}
 
@@ -92,22 +94,6 @@ export default function BoardFilters({ filters, onFiltersChange, availableServic
         >
           <span className={cn('h-[6px] w-[6px] rounded-full', p.dot)} />
           {p.label}
-        </button>
-      ))}
-
-      {/* Type pills */}
-      {availableTypes.map((t) => (
-        <button
-          key={t.name}
-          onClick={() => toggleFilter('types', t.name)}
-          className={cn(
-            'rounded-md px-2 py-[5px] text-[12px] transition-all duration-100',
-            filters.types.includes(t.name)
-              ? 'bg-blue-500/15 ring-1 ring-blue-500/30'
-              : 'bg-white/[0.03] ring-1 ring-white/[0.04] hover:bg-white/[0.06]'
-          )}
-        >
-          {t.icon}
         </button>
       ))}
 

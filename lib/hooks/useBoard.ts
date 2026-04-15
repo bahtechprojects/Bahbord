@@ -21,6 +21,7 @@ export type TicketItem = {
   categoryName?: string;
   completedAt?: string | null;
   clientName?: string | null;
+  projectId?: string | null;
 };
 
 export type BoardItems = {
@@ -43,6 +44,7 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
     assignees: [],
     types: [],
     priorities: [],
+    projects: [],
   });
 
   const { toast } = useToast();
@@ -85,6 +87,7 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
               categoryName: t.categoryName ?? t.category_name ?? undefined,
               completedAt: t.completedAt ?? t.completed_at ?? null,
               clientName: t.clientName ?? t.client_name ?? null,
+              projectId: t.projectId ?? t.project_id ?? null,
             });
 
             setItems({
@@ -122,6 +125,7 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
       if (filters.assignees.length > 0 && !filters.assignees.includes(t.assignee)) return false;
       if (filters.types.length > 0 && !filters.types.includes(t.typeIcon)) return false;
       if (filters.priorities.length > 0 && !filters.priorities.includes(t.priority)) return false;
+      if (filters.projects.length > 0 && (!t.projectId || !filters.projects.includes(t.projectId))) return false;
       return true;
     });
   }

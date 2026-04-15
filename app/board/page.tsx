@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import KanbanBoard from '@/components/board/KanbanBoard';
 import BoardShell from '@/components/board/BoardShell';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 type BoardTicket = {
   id: string;
@@ -18,7 +19,10 @@ type BoardTicket = {
   category_name: string | null;
   completed_at: string | null;
   client_name: string | null;
+  project_id: string | null;
 };
+
+type ProjectItem = { id: string; name: string };
 
 type ServiceItem = { id: string; name: string };
 type StatusItem = { id: string; name: string; wip_limit?: number | null };
@@ -49,11 +53,14 @@ function mapTicket(ticket: BoardTicket) {
     categoryName: ticket.category_name ?? undefined,
     completedAt: ticket.completed_at ?? null,
     clientName: ticket.client_name ?? null,
+    projectId: ticket.project_id ?? null,
   };
 }
 
 export default async function BoardPage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
   const { board_id, project_id } = await searchParams;
+  const auth = await getAuthMember();
+  const userIsAdmin = auth ? isAdmin(auth.role) : false;
 
   let whereClause = 'WHERE is_archived = false';
   const queryParams: string[] = [];
@@ -64,6 +71,10 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
   } else if (project_id) {
     queryParams.push(project_id);
     whereClause = `WHERE project_id = $${queryParams.length} AND is_archived = false`;
+  } else if (auth && !userIsAdmin) {
+    // Non-admin: show only tickets from boards they have access to
+    queryParams.push(auth.id);
+    whereClause = `WHERE is_archived = false AND board_id IN (SELECT board_id FROM board_roles WHERE member_id = $${queryParams.length})`;
   }
 
   const result = await query(
@@ -81,7 +92,8 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
       type_name,
       category_name,
       to_char(completed_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS completed_at,
-      (SELECT cl.name FROM clients cl WHERE cl.id = client_id) AS client_name
+      (SELECT cl.name FROM clients cl WHERE cl.id = client_id) AS client_name,
+      project_id
     FROM tickets_full
     ${whereClause}
     ORDER BY created_at DESC`,
@@ -91,10 +103,11 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
   const rows = result.rows as BoardTicket[];
 
   const wsId = await getDefaultWorkspaceId();
-  const [serviceRows, statusRows, typeRows] = await Promise.all([
+  const [serviceRows, statusRows, typeRows, projectRows] = await Promise.all([
     query<ServiceItem>(`SELECT id, name FROM services WHERE workspace_id = $1 ORDER BY name ASC`, [wsId]),
     query<StatusItem>(`SELECT id, name, wip_limit FROM statuses WHERE workspace_id = $1 ORDER BY position ASC`, [wsId]),
-    query<TicketTypeItem>(`SELECT id, name FROM ticket_types WHERE workspace_id = $1 ORDER BY position ASC`, [wsId])
+    query<TicketTypeItem>(`SELECT id, name FROM ticket_types WHERE workspace_id = $1 ORDER BY position ASC`, [wsId]),
+    query<ProjectItem>(`SELECT id, name FROM projects WHERE workspace_id = $1 AND is_archived = false ORDER BY name ASC`, [wsId]),
   ]);
 
   const initialItems = {
@@ -113,7 +126,7 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
 
   return (
     <BoardShell services={serviceRows.rows} statuses={statusRows.rows} ticketTypes={typeRows.rows}>
-      <KanbanBoard initialItems={initialItems} wipLimits={wipLimits} />
+      <KanbanBoard initialItems={initialItems} wipLimits={wipLimits} availableProjects={projectRows.rows} />
     </BoardShell>
   );
 }

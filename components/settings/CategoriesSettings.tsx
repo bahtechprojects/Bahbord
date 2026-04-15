@@ -27,21 +27,31 @@ export default function CategoriesSettings() {
   useEffect(() => { fetchCategories(); }, []);
 
   async function handleUpdate(id: string, field: string, value: unknown) {
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'categories', id, [field]: value }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Erro ao atualizar categoria');
+      return;
+    }
     await fetchCategories();
   }
 
   async function handleAdd() {
     if (!newName.trim()) return;
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'categories', name: newName.trim(), color: newColor }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Erro ao criar categoria');
+      return;
+    }
     setNewName('');
     setAdding(false);
     await fetchCategories();
@@ -49,7 +59,12 @@ export default function CategoriesSettings() {
 
   async function handleDelete(id: string) {
     if (!confirm('Remover esta categoria?')) return;
-    await fetch(`/api/settings?table=categories&id=${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/settings?table=categories&id=${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Erro ao remover categoria');
+      return;
+    }
     await fetchCategories();
   }
 

@@ -169,6 +169,13 @@ export async function DELETE(request: Request) {
       }
     }
 
+    if (table === 'categories') {
+      const check = await query(`SELECT COUNT(*) AS cnt FROM tickets WHERE category_id = $1`, [id]);
+      if (parseInt(check.rows[0].cnt) > 0) {
+        return NextResponse.json({ error: 'Não é possível remover: existem tickets com esta categoria' }, { status: 409 });
+      }
+    }
+
     await query(`DELETE FROM ${table} WHERE id = $1`, [id]);
     return NextResponse.json({ ok: true });
   } catch (err) {

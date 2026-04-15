@@ -19,9 +19,10 @@ const columns: Array<{ id: keyof BoardItems; title: string; color: string }> = [
 interface KanbanBoardProps {
   initialItems: BoardItems;
   wipLimits?: Record<string, number | null>;
+  availableProjects?: { id: string; name: string }[];
 }
 
-export default function KanbanBoard({ initialItems, wipLimits = {} }: KanbanBoardProps) {
+export default function KanbanBoard({ initialItems, wipLimits = {}, availableProjects = [] }: KanbanBoardProps) {
   const {
     items,
     selectedCard,
@@ -71,6 +72,7 @@ export default function KanbanBoard({ initialItems, wipLimits = {} }: KanbanBoar
         availableServices={availableServices}
         availableAssignees={availableAssignees}
         availableTypes={availableTypes}
+        availableProjects={availableProjects}
       />
 
       <DndContext

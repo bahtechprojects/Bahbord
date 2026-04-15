@@ -12,7 +12,7 @@ import {
 import { useProject } from '@/lib/project-context';
 import ChangelogPanel from '@/components/changelog/ChangelogPanel';
 
-const mainNav = [
+const mainNavBase = [
   { href: '/board', label: 'Quadro', icon: Columns3 },
   { href: '/list', label: 'Lista', icon: List },
   { href: '/backlog', label: 'Backlog', icon: Inbox },
@@ -141,7 +141,7 @@ export default function Sidebar() {
                 {recentBoards.map((rb) => (
                   <Link
                     key={rb.id}
-                    href="/board"
+                    href={`/board?board_id=${rb.id}`}
                     onClick={() => setBoard(rb.id)}
                     className="flex items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
                   >
@@ -182,7 +182,7 @@ export default function Sidebar() {
                       {projectBoards.map((b) => (
                         <Link
                           key={b.id}
-                          href="/board"
+                          href={`/board?board_id=${b.id}`}
                           onClick={() => setBoard(b.id)}
                           className="flex items-center gap-1.5 truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
                         >
@@ -217,7 +217,10 @@ export default function Sidebar() {
           </div>
         )}
         {collapsed && <div className="my-2 mx-2 h-px bg-white/[0.06]" />}
-        {mainNav.map((item) => <NavItem key={item.href} {...item} />)}
+        {mainNavBase.map((item) => {
+          const boardParam = currentBoardId ? `?board_id=${currentBoardId}` : '';
+          return <NavItem key={item.href} {...item} href={`${item.href}${boardParam}`} />;
+        })}
 
         {isAdminUser && (!collapsed ? (
           <button

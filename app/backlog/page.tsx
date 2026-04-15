@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 const priorityLabels: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: '#ef4444' },
@@ -14,6 +15,17 @@ const priorityLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default async function BacklogPage() {
+  const auth = await getAuthMember();
+  const userIsAdmin = auth ? isAdmin(auth.role) : false;
+
+  let whereClause = 'WHERE is_archived = false AND sprint_id IS NULL';
+  const params: string[] = [];
+
+  if (auth && !userIsAdmin) {
+    params.push(auth.id);
+    whereClause = `WHERE is_archived = false AND sprint_id IS NULL AND board_id IN (SELECT board_id FROM board_roles WHERE member_id = $1)`;
+  }
+
   const result = await query(`
     SELECT
       ticket_key, id, title, priority, status_name, status_color,
@@ -21,9 +33,9 @@ export default async function BacklogPage() {
       to_char(due_date AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS due,
       to_char(created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS created
     FROM tickets_full
-    WHERE is_archived = false AND sprint_id IS NULL
+    ${whereClause}
     ORDER BY created_at DESC
-  `);
+  `, params.length > 0 ? params : undefined);
 
   const tickets = result.rows as any[];
 

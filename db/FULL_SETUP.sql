@@ -58,6 +58,7 @@ CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  color TEXT DEFAULT '#f59e0b',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

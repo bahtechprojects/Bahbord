@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
 
     const body = await request.json();
     const { ticket_id, action } = body;
@@ -42,11 +42,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ticket_id obrigatório' }, { status: 400 });
     }
 
-    let memberId: string;
-    try {
-      memberId = await getDefaultMemberId();
-    } catch {
-      return NextResponse.json({ error: 'Nenhum membro encontrado' }, { status: 400 });
+    let memberId = auth?.id;
+    if (!memberId) {
+      try {
+        memberId = await getDefaultMemberId();
+      } catch {
+        return NextResponse.json({ error: 'Nenhum membro encontrado' }, { status: 400 });
+      }
     }
 
     if (action === 'start') {

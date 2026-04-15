@@ -4,8 +4,20 @@ import Header from '@/components/layout/Header';
 import ListView from '@/components/list/ListView';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export default async function ListPage() {
+  const auth = await getAuthMember();
+  const userIsAdmin = auth ? isAdmin(auth.role) : false;
+
+  let ticketWhere = 'WHERE is_archived = false';
+  const ticketParams: string[] = [];
+
+  if (auth && !userIsAdmin) {
+    ticketParams.push(auth.id);
+    ticketWhere = `WHERE is_archived = false AND board_id IN (SELECT board_id FROM board_roles WHERE member_id = $1)`;
+  }
+
   const [ticketsResult, statusesResult, membersResult] = await Promise.all([
     query(`
       SELECT
@@ -14,9 +26,9 @@ export default async function ListPage() {
         to_char(due_date AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS due,
         to_char(created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS created
       FROM tickets_full
-      WHERE is_archived = false
+      ${ticketWhere}
       ORDER BY created_at DESC
-    `),
+    `, ticketParams.length > 0 ? ticketParams : undefined),
     query(`SELECT id, name FROM statuses ORDER BY position ASC`),
     query(`SELECT id, display_name FROM members ORDER BY display_name ASC`),
   ]);
