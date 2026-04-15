@@ -38,9 +38,20 @@ export default function Sidebar() {
   const [boards, setBoards] = useState<Array<{ id: string; name: string; type: string; project_id: string }>>([]);
   const { currentProjectId, recentBoards, setProject, setBoard } = useProject();
 
+  // Carregar projetos filtrados por acesso do membro logado
   useState(() => {
-    fetch('/api/options?type=projects').then((r) => r.json()).then(setProjects).catch(() => {});
-    fetch('/api/options?type=boards').then((r) => r.json()).then(setBoards).catch(() => {});
+    async function loadUserProjects() {
+      try {
+        const meRes = await fetch('/api/auth/me');
+        const me = meRes.ok ? await meRes.json() : null;
+        const mid = me?.member?.id;
+        const projRes = await fetch(mid ? `/api/projects?member_id=${mid}` : '/api/projects');
+        if (projRes.ok) setProjects(await projRes.json());
+        const bRes = await fetch('/api/options?type=boards');
+        if (bRes.ok) setBoards(await bRes.json());
+      } catch {}
+    }
+    loadUserProjects();
   });
 
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {

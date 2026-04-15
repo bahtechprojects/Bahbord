@@ -5,21 +5,68 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
+    const memberId = searchParams.get('member_id');
 
     if (!projectId) {
       return NextResponse.json({ error: 'project_id é obrigatório' }, { status: 400 });
     }
 
-    const result = await query(
-      `SELECT
-        b.id, b.project_id, b.name, b.description, b.type,
-        b.filter_query, b.is_default, b.created_at, b.updated_at,
-        (SELECT COUNT(*) FROM tickets t WHERE t.board_id = b.id)::int AS ticket_count
-      FROM boards b
-      WHERE b.project_id = $1
-      ORDER BY b.is_default DESC, b.name ASC`,
-      [projectId]
-    );
+    let result;
+
+    if (memberId) {
+      // Verificar se membro é admin do projeto ou da org
+      const projectRole = await query(
+        `SELECT role FROM project_roles WHERE member_id = $1 AND project_id = $2`,
+        [memberId, projectId]
+      );
+      const pRole = projectRole.rows[0]?.role;
+
+      if (pRole === 'admin') {
+        // Project admin → vê todos os boards do projeto
+        result = await query(
+          `SELECT
+            b.id, b.project_id, b.name, b.description, b.type,
+            b.filter_query, b.is_default, b.created_at, b.updated_at,
+            (SELECT COUNT(*) FROM tickets t WHERE t.board_id = b.id)::int AS ticket_count
+          FROM boards b
+          WHERE b.project_id = $1
+          ORDER BY b.is_default DESC, b.name ASC`,
+          [projectId]
+        );
+      } else {
+        // Member/viewer → só boards onde tem board_role
+        result = await query(
+          `SELECT
+            b.id, b.project_id, b.name, b.description, b.type,
+            b.filter_query, b.is_default, b.created_at, b.updated_at,
+            (SELECT COUNT(*) FROM tickets t WHERE t.board_id = b.id)::int AS ticket_count
+          FROM boards b
+          WHERE b.project_id = $1
+            AND (
+              -- Project admin/member vê todos
+              EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = $1 AND pr.member_id = $2 AND pr.role IN ('admin', 'member'))
+              -- Ou tem board_role específico
+              OR EXISTS (SELECT 1 FROM board_roles br WHERE br.board_id = b.id AND br.member_id = $2)
+              -- Ou é org admin/owner
+              OR EXISTS (SELECT 1 FROM org_roles orr JOIN projects p ON p.workspace_id = orr.workspace_id WHERE p.id = $1 AND orr.member_id = $2 AND orr.role IN ('owner', 'admin'))
+            )
+          ORDER BY b.is_default DESC, b.name ASC`,
+          [projectId, memberId]
+        );
+      }
+    } else {
+      // Sem filtro → todos (backward compat)
+      result = await query(
+        `SELECT
+          b.id, b.project_id, b.name, b.description, b.type,
+          b.filter_query, b.is_default, b.created_at, b.updated_at,
+          (SELECT COUNT(*) FROM tickets t WHERE t.board_id = b.id)::int AS ticket_count
+        FROM boards b
+        WHERE b.project_id = $1
+        ORDER BY b.is_default DESC, b.name ASC`,
+        [projectId]
+      );
+    }
 
     return NextResponse.json(result.rows);
   } catch (err) {

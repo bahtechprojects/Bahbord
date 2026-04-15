@@ -1,21 +1,64 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const memberId = searchParams.get('member_id');
     const workspaceId = await getDefaultWorkspaceId();
 
-    const result = await query(
-      `SELECT
+    const baseSelect = `
+      SELECT
         p.id, p.workspace_id, p.name, p.prefix, p.description, p.color,
         p.is_archived, p.created_at, p.updated_at,
         (SELECT COUNT(*) FROM boards b WHERE b.project_id = p.id)::int AS board_count,
         (SELECT COUNT(*) FROM tickets t WHERE t.project_id = p.id)::int AS ticket_count
-      FROM projects p
-      WHERE p.workspace_id = $1 AND p.is_archived = false
-      ORDER BY p.name ASC`,
-      [workspaceId]
-    );
+      FROM projects p`;
+
+    let result;
+
+    if (memberId) {
+      // Verificar nível de acesso do membro
+      const orgRole = await query(
+        `SELECT role FROM org_roles WHERE member_id = $1 AND workspace_id = $2`,
+        [memberId, workspaceId]
+      );
+      const role = orgRole.rows[0]?.role;
+
+      if (role === 'owner' || role === 'admin') {
+        // Org owner/admin → vê todos os projetos
+        result = await query(
+          `${baseSelect}
+           WHERE p.workspace_id = $1 AND p.is_archived = false
+           ORDER BY p.name ASC`,
+          [workspaceId]
+        );
+      } else {
+        // Cliente/member → só projetos onde tem acesso (project_role ou board_role)
+        result = await query(
+          `${baseSelect}
+           WHERE p.workspace_id = $1 AND p.is_archived = false
+             AND (
+               EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = p.id AND pr.member_id = $2)
+               OR EXISTS (
+                 SELECT 1 FROM board_roles br
+                 JOIN boards b ON b.id = br.board_id
+                 WHERE b.project_id = p.id AND br.member_id = $2
+               )
+             )
+           ORDER BY p.name ASC`,
+          [workspaceId, memberId]
+        );
+      }
+    } else {
+      // Sem filtro → todos (backward compat)
+      result = await query(
+        `${baseSelect}
+         WHERE p.workspace_id = $1 AND p.is_archived = false
+         ORDER BY p.name ASC`,
+        [workspaceId]
+      );
+    }
 
     return NextResponse.json(result.rows);
   } catch (err) {
