@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard, Columns3, List, Inbox, Zap, Search, Settings,
   ChevronDown, Menu, X, CalendarDays, Clock, ChevronRight, PanelLeftClose, PanelLeft,
-  FolderKanban, History, Filter, Users
+  FolderKanban, History, Filter, Users, BookOpen
 } from 'lucide-react';
 import { useProject } from '@/lib/project-context';
 import ChangelogPanel from '@/components/changelog/ChangelogPanel';
@@ -186,6 +186,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto">
         <NavItem href="/" label="Dashboard" icon={LayoutDashboard} />
+        <NavItem href="/docs" label="Documentação" icon={BookOpen} />
 
         {!collapsed && (
           <div className="pt-2 pb-0.5">

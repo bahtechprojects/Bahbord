@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Users, Building2, Columns3, Tag, Layers, Type, Smile, Shield, Webhook, Link2, MessageCircle } from 'lucide-react';
+import { Settings, Users, Building2, Columns3, Tag, Layers, Type, Smile, Shield, ClipboardCheck, Webhook, Link2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import GeneralSettings from './GeneralSettings';
 import MembersSettings from './MembersSettings';
@@ -15,8 +15,9 @@ import WebhookSettings from './WebhookSettings';
 import ClockifySettings from './ClockifySettings';
 import WhatsAppSettings from './WhatsAppSettings';
 import PermissionsSettings from './PermissionsSettings';
+import ApprovalsSettings from './ApprovalsSettings';
 
-type SettingsTab = 'general' | 'clients' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'reactions' | 'permissions' | 'webhooks' | 'clockify' | 'whatsapp';
+type SettingsTab = 'general' | 'clients' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'reactions' | 'permissions' | 'approvals' | 'webhooks' | 'clockify' | 'whatsapp';
 
 const tabs: { key: SettingsTab; label: string; icon: React.ElementType; section?: string }[] = [
   { key: 'general', label: 'Geral', icon: Settings },
@@ -28,6 +29,7 @@ const tabs: { key: SettingsTab; label: string; icon: React.ElementType; section?
   { key: 'ticket_types', label: 'Tipos de ticket', icon: Type },
   { key: 'reactions', label: 'Reações rápidas', icon: Smile },
   { key: 'permissions', label: 'Permissões', icon: Shield, section: 'Segurança' },
+  { key: 'approvals', label: 'Aprovações', icon: ClipboardCheck, section: 'Segurança' },
   { key: 'webhooks', label: 'Webhooks', icon: Webhook, section: 'Integrações' },
   { key: 'clockify', label: 'Clockify', icon: Link2, section: 'Integrações' },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, section: 'Integrações' },
@@ -82,6 +84,7 @@ export default function SettingsView() {
           {activeTab === 'ticket_types' && <TicketTypesSettings />}
           {activeTab === 'reactions' && <QuickReactionsSettings />}
           {activeTab === 'permissions' && <PermissionsSettings />}
+          {activeTab === 'approvals' && <ApprovalsSettings />}
           {activeTab === 'webhooks' && <WebhookSettings />}
           {activeTab === 'clockify' && <ClockifySettings />}
           {activeTab === 'whatsapp' && <WhatsAppSettings />}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X, FileText, ArrowRight } from 'lucide-react';
+import { Search, X, FileText, ArrowRight, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface SearchResult {
@@ -13,6 +13,9 @@ interface SearchResult {
   status_color?: string;
   service?: string;
   assignee?: string;
+  _type?: 'ticket' | 'doc';
+  space_name?: string;
+  space_icon?: string;
 }
 
 export default function SearchModal() {
@@ -55,11 +58,21 @@ export default function SearchModal() {
     if (q.length < 2) { setResults([]); return; }
     setLoading(true);
     try {
-      const res = await fetch(`/api/tickets/search?q=${encodeURIComponent(q)}`);
-      if (res.ok) {
-        setResults(await res.json());
-        setSelectedIndex(0);
+      const [ticketsRes, docsRes] = await Promise.all([
+        fetch(`/api/tickets/search?q=${encodeURIComponent(q)}`),
+        fetch(`/api/docs/pages?search=${encodeURIComponent(q)}`),
+      ]);
+      const combined: SearchResult[] = [];
+      if (ticketsRes.ok) {
+        const tickets = await ticketsRes.json();
+        combined.push(...tickets.map((t: SearchResult) => ({ ...t, _type: 'ticket' as const })));
       }
+      if (docsRes.ok) {
+        const docs = await docsRes.json();
+        combined.push(...docs.map((d: SearchResult) => ({ ...d, _type: 'doc' as const })));
+      }
+      setResults(combined);
+      setSelectedIndex(0);
     } catch (err) { console.error('Erro na busca:', err); }
     finally { setLoading(false); }
   }, []);
@@ -69,9 +82,13 @@ export default function SearchModal() {
     return () => clearTimeout(timer);
   }, [query, doSearch]);
 
-  function navigate(id: string) {
+  function navigate(result: SearchResult) {
     setIsOpen(false);
-    router.push(`/ticket/${id}`);
+    if (result._type === 'doc') {
+      router.push(`/docs?page=${result.id}`);
+    } else {
+      router.push(`/ticket/${result.id}`);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -82,7 +99,7 @@ export default function SearchModal() {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter' && results[selectedIndex]) {
-      navigate(results[selectedIndex].id);
+      navigate(results[selectedIndex]);
     }
   }
 
@@ -105,7 +122,7 @@ export default function SearchModal() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Buscar tickets..."
+            placeholder="Buscar tickets e documentos..."
             className="flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-500"
           />
           <kbd className="hidden rounded bg-surface px-1.5 py-0.5 text-[10px] text-slate-500 sm:inline">ESC</kbd>
@@ -130,14 +147,18 @@ export default function SearchModal() {
 
           {!loading && results.map((r, i) => (
             <button
-              key={r.id}
-              onClick={() => navigate(r.id)}
+              key={`${r._type}-${r.id}`}
+              onClick={() => navigate(r)}
               className={cn(
                 'flex w-full items-center gap-3 px-4 py-2.5 text-left transition',
                 i === selectedIndex ? 'bg-accent/10' : 'hover:bg-surface'
               )}
             >
-              <FileText size={14} className="shrink-0 text-slate-500" />
+              {r._type === 'doc' ? (
+                <BookOpen size={14} className="shrink-0 text-blue-400" />
+              ) : (
+                <FileText size={14} className="shrink-0 text-slate-500" />
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   {r.ticket_key && (
@@ -146,6 +167,9 @@ export default function SearchModal() {
                   <span className="truncate text-sm text-slate-200">{r.title}</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-[10px] text-slate-500">
+                  {r._type === 'doc' && r.space_name && (
+                    <span>{r.space_icon} {r.space_name}</span>
+                  )}
                   {r.status && <span>{r.status}</span>}
                   {r.service && <span>{r.service}</span>}
                   {r.assignee && <span>{r.assignee}</span>}
@@ -157,7 +181,7 @@ export default function SearchModal() {
 
           {!loading && query.length < 2 && (
             <div className="py-8 text-center text-xs text-slate-500">
-              Digite para buscar tickets por título ou key
+              Digite para buscar tickets e documentos
             </div>
           )}
         </div>

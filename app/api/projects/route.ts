@@ -34,6 +34,31 @@ export async function POST(request: Request) {
     }
 
     const workspaceId = await getDefaultWorkspaceId();
+    const requesterId = body.requester_id;
+
+    // Se requester_id informado, verificar se é owner/admin da org
+    // Se não for, criar pedido de aprovação ao invés de criar direto
+    if (requesterId) {
+      const roleCheck = await query(
+        `SELECT role FROM org_roles WHERE member_id = $1 AND workspace_id = $2`,
+        [requesterId, workspaceId]
+      );
+      const role = roleCheck.rows[0]?.role;
+
+      if (role !== 'owner' && role !== 'admin') {
+        // Criar pedido de aprovação
+        const approval = await query(
+          `INSERT INTO approval_requests (workspace_id, requester_id, type, request_data)
+           VALUES ($1, $2, 'project_creation', $3)
+           RETURNING *`,
+          [workspaceId, requesterId, JSON.stringify({ name, prefix: prefix.toUpperCase(), description, color })]
+        );
+        return NextResponse.json(
+          { pending: true, approval_id: approval.rows[0].id, message: 'Pedido de criação enviado para aprovação do administrador' },
+          { status: 202 }
+        );
+      }
+    }
 
     const result = await query(
       `INSERT INTO projects (workspace_id, name, prefix, description, color)
