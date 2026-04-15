@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, FolderKanban, Archive } from 'lucide-react';
+import { Plus, FolderKanban, Archive, ArrowLeft } from 'lucide-react';
 import { useProject } from '@/lib/project-context';
 import { useToast } from '@/components/ui/Toast';
 
@@ -87,9 +87,12 @@ export default function ProjectsPage() {
   return (
     <div className="mx-auto max-w-[1000px] space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"><ArrowLeft size={18} /></button>
+          <div>
           <h1 className="text-xl font-bold text-white">Projetos</h1>
           <p className="mt-1 text-sm text-slate-500">{projects.length} projeto{projects.length !== 1 ? 's' : ''}</p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Users, Trash2, UserPlus, UserMinus, Pencil, X, ChevronDown, Shield } from 'lucide-react';
+import { Plus, Users, Trash2, UserPlus, UserMinus, Pencil, X, ChevronDown, Shield, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Avatar from '@/components/ui/Avatar';
 import { useToast } from '@/components/ui/Toast';
 
@@ -28,6 +29,7 @@ interface AvailableMember {
 }
 
 export default function TeamsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [allMembers, setAllMembers] = useState<AvailableMember[]>([]);
@@ -176,11 +178,14 @@ export default function TeamsPage() {
     <div className="mx-auto max-w-[1000px] space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Equipes</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {teams.length} equipe{teams.length !== 1 ? 's' : ''}
-          </p>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"><ArrowLeft size={18} /></button>
+          <div>
+            <h1 className="text-xl font-bold text-white">Equipes</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {teams.length} equipe{teams.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}

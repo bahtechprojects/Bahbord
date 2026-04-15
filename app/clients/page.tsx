@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Building2, Package, Users, Trash2, X, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Plus, Search, Building2, Package, Users, Trash2, X, Mail, Phone, ExternalLink, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 
 // ── Types ──────────────────────────────────────────────────
@@ -38,6 +39,7 @@ type Tab = 'clients' | 'organizations' | 'products';
 
 // ── Main Page ──────────────────────────────────────────────
 export default function ClientsPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('clients');
   const [clients, setClients] = useState<Client[]>([]);
   const [orgs, setOrgs] = useState<Organization[]>([]);
@@ -80,9 +82,12 @@ export default function ClientsPage() {
 
   return (
     <div className="mx-auto max-w-[1100px] space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white">Clientes</h1>
-        <p className="mt-1 text-sm text-slate-500">Gerencie clientes, organizacoes e produtos</p>
+      <div className="flex items-center gap-3">
+        <button onClick={() => router.back()} className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"><ArrowLeft size={18} /></button>
+        <div>
+          <h1 className="text-xl font-bold text-white">Clientes</h1>
+          <p className="mt-1 text-sm text-slate-500">Gerencie clientes, organizacoes e produtos</p>
+        </div>
       </div>
 
       {/* Tabs */}
