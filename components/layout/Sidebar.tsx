@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard, Columns3, List, Inbox, Zap, Search, Settings,
@@ -30,7 +30,6 @@ export function useSidebar() { return useContext(SidebarContext); }
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [planningOpen, setPlanningOpen] = useState(true);
@@ -72,7 +71,7 @@ export default function Sidebar() {
     const active = pathname === basePath;
     return (
       <button
-        onClick={() => { setMobileOpen(false); router.push(href as any); router.refresh(); }}
+        onClick={() => { setMobileOpen(false); window.location.href = href; }}
         title={collapsed ? label : undefined}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
@@ -143,7 +142,7 @@ export default function Sidebar() {
                 {recentBoards.map((rb) => (
                   <button
                     key={rb.id}
-                    onClick={() => { setBoard(rb.id); router.push(`/board?board_id=${rb.id}`); router.refresh(); setMobileOpen(false); }}
+                    onClick={() => { setBoard(rb.id); setMobileOpen(false); window.location.href = `/board?board_id=${rb.id}`; }}
                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 text-left"
                   >
                     <Columns3 size={12} className="text-slate-600 shrink-0" />
@@ -183,7 +182,7 @@ export default function Sidebar() {
                       {projectBoards.map((b) => (
                         <button
                           key={b.id}
-                          onClick={() => { setBoard(b.id); router.push(`/board?board_id=${b.id}`); router.refresh(); setMobileOpen(false); }}
+                          onClick={() => { setBoard(b.id); setMobileOpen(false); window.location.href = `/board?board_id=${b.id}`; }}
                           className="flex w-full items-center gap-1.5 truncate rounded px-2 py-1 text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 text-left"
                         >
                           <Columns3 size={11} className="text-slate-600 shrink-0" />
