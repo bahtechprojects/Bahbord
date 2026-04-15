@@ -14,10 +14,13 @@ export async function GET(request: Request) {
       sprints: `SELECT id, name, is_active FROM sprints ORDER BY created_at DESC`,
       ticket_types: `SELECT id, name, icon, color FROM ticket_types ORDER BY position ASC`,
       clients: `SELECT id, name, color FROM clients WHERE is_active = true ORDER BY name ASC`,
+      projects: `SELECT id, name, prefix, color FROM projects WHERE workspace_id = (SELECT id FROM workspaces LIMIT 1) AND is_archived = false ORDER BY name ASC`,
+      boards: `SELECT id, name, type, project_id FROM boards ORDER BY name ASC`,
+      templates: `SELECT id, name, description FROM project_templates ORDER BY name ASC`,
     };
 
     if (!type || !queries[type]) {
-      return NextResponse.json({ error: 'type inválido. Use: statuses, services, members, categories, sprints, ticket_types' }, { status: 400 });
+      return NextResponse.json({ error: 'type inválido. Use: statuses, services, members, categories, sprints, ticket_types, clients, projects, boards, templates' }, { status: 400 });
     }
 
     const result = await query(queries[type]);

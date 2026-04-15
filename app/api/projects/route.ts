@@ -1,0 +1,135 @@
+import { NextResponse } from 'next/server';
+import { query, getDefaultWorkspaceId } from '@/lib/db';
+
+export async function GET() {
+  try {
+    const workspaceId = await getDefaultWorkspaceId();
+
+    const result = await query(
+      `SELECT
+        p.id, p.workspace_id, p.name, p.prefix, p.description, p.color,
+        p.is_archived, p.created_at, p.updated_at,
+        (SELECT COUNT(*) FROM boards b WHERE b.project_id = p.id)::int AS board_count,
+        (SELECT COUNT(*) FROM tickets t WHERE t.project_id = p.id)::int AS ticket_count
+      FROM projects p
+      WHERE p.workspace_id = $1 AND p.is_archived = false
+      ORDER BY p.name ASC`,
+      [workspaceId]
+    );
+
+    return NextResponse.json(result.rows);
+  } catch (err) {
+    console.error('GET /api/projects error:', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { name, prefix, description, color, template_id } = body;
+
+    if (!name || !prefix) {
+      return NextResponse.json({ error: 'name e prefix são obrigatórios' }, { status: 400 });
+    }
+
+    const workspaceId = await getDefaultWorkspaceId();
+
+    const result = await query(
+      `INSERT INTO projects (workspace_id, name, prefix, description, color)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [workspaceId, name, prefix.toUpperCase(), description || null, color || '#3b82f6']
+    );
+
+    const project = result.rows[0];
+
+    // Create default board for the project
+    await query(
+      `INSERT INTO boards (project_id, name, type, is_default)
+       VALUES ($1, $2, 'kanban', true)`,
+      [project.id, 'Board Principal']
+    );
+
+    // If template_id provided, log it for future use
+    if (template_id) {
+      await query(
+        `INSERT INTO changelog (workspace_id, project_id, entity_type, entity_id, action, details)
+         VALUES ($1, $2, 'project', $3, 'created', $4)`,
+        [workspaceId, project.id, project.id, JSON.stringify({ template_id })]
+      );
+    }
+
+    return NextResponse.json(project, { status: 201 });
+  } catch (err) {
+    console.error('POST /api/projects error:', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, name, description, color, is_archived } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'id é obrigatório' }, { status: 400 });
+    }
+
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (name !== undefined) { sets.push(`name = $${idx}`); values.push(name); idx++; }
+    if (description !== undefined) { sets.push(`description = $${idx}`); values.push(description); idx++; }
+    if (color !== undefined) { sets.push(`color = $${idx}`); values.push(color); idx++; }
+    if (is_archived !== undefined) { sets.push(`is_archived = $${idx}`); values.push(is_archived); idx++; }
+
+    if (sets.length === 0) {
+      return NextResponse.json({ error: 'Nenhum campo para atualizar' }, { status: 400 });
+    }
+
+    sets.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await query(
+      `UPDATE projects SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json(result.rows[0]);
+  } catch (err) {
+    console.error('PATCH /api/projects error:', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id é obrigatório' }, { status: 400 });
+    }
+
+    // Archive instead of hard delete
+    const result = await query(
+      `UPDATE projects SET is_archived = true, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, project: result.rows[0] });
+  } catch (err) {
+    console.error('DELETE /api/projects error:', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
