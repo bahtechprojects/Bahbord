@@ -69,6 +69,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     ticket_type_id: 'ticket_type_id',
     parent_id: 'parent_id',
     client_id: 'client_id',
+    project_id: 'project_id',
+    board_id: 'board_id',
   };
 
   const sets: string[] = [];

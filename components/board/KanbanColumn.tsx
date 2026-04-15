@@ -9,6 +9,7 @@ import { useBoardShell } from './BoardShell';
 import { Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
+import { useProject } from '@/lib/project-context';
 
 interface ColumnCard {
   id: string;
@@ -55,6 +56,7 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
   const accent = columnAccents[id] || color;
   const router = useRouter();
   const { toast } = useToast();
+  const { currentProjectId, currentBoardId } = useProject();
 
   const [quickCreate, setQuickCreate] = useState(false);
   const [quickTitle, setQuickTitle] = useState('');
@@ -72,6 +74,8 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
           title: quickTitle.trim(),
           status_id: null,
           priority: 'medium',
+          project_id: currentProjectId || null,
+          board_id: currentBoardId || null,
         }),
       });
 

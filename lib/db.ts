@@ -41,7 +41,7 @@ const ALLOWED_COLUMNS: Record<string, string[]> = {
   quick_reactions: ['emoji', 'label', 'position'],
   members: ['display_name', 'email', 'role', 'phone'],
   clients: ['name', 'color', 'contact_email', 'contact_phone', 'is_active'],
-  tickets: ['title', 'description', 'priority', 'due_date', 'status_id', 'assignee_id', 'reporter_id', 'service_id', 'category_id', 'sprint_id', 'ticket_type_id', 'parent_id', 'client_id'],
+  tickets: ['title', 'description', 'priority', 'due_date', 'status_id', 'assignee_id', 'reporter_id', 'service_id', 'category_id', 'sprint_id', 'ticket_type_id', 'parent_id', 'client_id', 'project_id', 'board_id'],
   subtasks: ['title', 'is_completed', 'is_done', 'position'],
   time_entries: ['description', 'duration_minutes', 'is_billable'],
 };

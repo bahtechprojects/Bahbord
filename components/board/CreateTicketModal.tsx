@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
+import { useProject } from '@/lib/project-context';
 
 interface SelectItem { id: string; name: string; icon?: string; color?: string; display_name?: string; is_active?: boolean }
 
@@ -38,6 +39,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
   function CreateTicketModal({ services: initialServices, statuses: initialStatuses, ticketTypes: initialTicketTypes }, ref) {
     const router = useRouter();
     const { toast } = useToast();
+    const { currentProjectId, currentBoardId } = useProject();
     const [isOpen, setIsOpen] = useState(false);
 
     // Form fields
@@ -136,6 +138,8 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
             client_id: clientId || null,
             category_id: categoryId || null,
             sprint_id: sprintId || null,
+            project_id: currentProjectId || null,
+            board_id: currentBoardId || null,
           })
         });
 

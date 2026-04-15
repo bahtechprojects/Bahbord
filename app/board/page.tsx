@@ -51,7 +51,20 @@ function mapTicket(ticket: BoardTicket) {
   };
 }
 
-export default async function BoardPage() {
+export default async function BoardPage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
+  const { board_id, project_id } = await searchParams;
+
+  let whereClause = 'WHERE is_archived = false';
+  const queryParams: string[] = [];
+
+  if (board_id) {
+    queryParams.push(board_id);
+    whereClause = `WHERE board_id = $${queryParams.length} AND is_archived = false`;
+  } else if (project_id) {
+    queryParams.push(project_id);
+    whereClause = `WHERE project_id = $${queryParams.length} AND is_archived = false`;
+  }
+
   const result = await query(
     `SELECT
       id,
@@ -69,8 +82,9 @@ export default async function BoardPage() {
       to_char(completed_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS completed_at,
       (SELECT cl.name FROM clients cl WHERE cl.id = client_id) AS client_name
     FROM tickets_full
-    WHERE is_archived = false
-    ORDER BY created_at DESC`
+    ${whereClause}
+    ORDER BY created_at DESC`,
+    queryParams.length > 0 ? queryParams : undefined
   );
 
   const rows = result.rows as BoardTicket[];

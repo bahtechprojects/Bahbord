@@ -28,13 +28,39 @@ export async function getBoardRole(memberId: string, boardId: string): Promise<B
   return (result.rows[0]?.role as BoardRole) || null;
 }
 
-export async function canAccess(memberId: string, level: 'org' | 'project' | 'board', id: string, minRole: string): Promise<boolean> {
+export async function canAccess(
+  memberId: string,
+  level: 'org' | 'project' | 'board',
+  id: string,
+  minRole: string,
+  options?: { workspaceId?: string; projectId?: string }
+): Promise<boolean> {
   const roleHierarchy: Record<string, number> = { owner: 4, admin: 3, member: 2, viewer: 1 };
   let role: string | null = null;
 
-  if (level === 'org') role = await getOrgRole(memberId, id);
-  if (level === 'project') role = await getProjectRole(memberId, id);
-  if (level === 'board') role = await getBoardRole(memberId, id);
+  if (level === 'org') {
+    role = await getOrgRole(memberId, id);
+  }
+
+  if (level === 'project') {
+    role = await getProjectRole(memberId, id);
+    // Inherit from org if no project role
+    if (!role && options?.workspaceId) {
+      role = await getOrgRole(memberId, options.workspaceId);
+    }
+  }
+
+  if (level === 'board') {
+    role = await getBoardRole(memberId, id);
+    // Inherit from project if no board role
+    if (!role && options?.projectId) {
+      role = await getProjectRole(memberId, options.projectId);
+    }
+    // Inherit from org if still no role
+    if (!role && options?.workspaceId) {
+      role = await getOrgRole(memberId, options.workspaceId);
+    }
+  }
 
   if (!role) return false;
   return (roleHierarchy[role] || 0) >= (roleHierarchy[minRole] || 0);
