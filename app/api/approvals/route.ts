@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, action, reviewer_id, reviewer_note } = body;
+    const { id, action, reviewer_id, reviewer_note, board_id, project_id, role: assignRole } = body;
 
     if (!id || !action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'id e action (approve/reject) são obrigatórios' }, { status: 400 });
@@ -132,12 +132,65 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // Se aprovado e é acesso à org, aprovar o membro
+    // Se aprovado e é acesso ao board (usuário externo)
+    if (action === 'approve' && approval.type === 'board_access') {
+      const targetBoardId = board_id || approval.request_data?.board_id;
+      const targetRole = assignRole || 'viewer';
+
+      if (targetBoardId) {
+        // Dar acesso ao board
+        await query(
+          `INSERT INTO board_roles (board_id, member_id, role)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (board_id, member_id) DO UPDATE SET role = $3`,
+          [targetBoardId, approval.requester_id, targetRole]
+        );
+
+        // Também dar acesso de viewer ao projeto (para ele ver no sidebar)
+        const boardProject = await query(
+          `SELECT project_id FROM boards WHERE id = $1`, [targetBoardId]
+        );
+        if (boardProject.rows[0]) {
+          await query(
+            `INSERT INTO project_roles (project_id, member_id, role)
+             VALUES ($1, $2, 'viewer')
+             ON CONFLICT (project_id, member_id) DO NOTHING`,
+            [boardProject.rows[0].project_id, approval.requester_id]
+          );
+        }
+      }
+
+      // Aprovar membro na org
+      await query(`UPDATE members SET is_approved = true WHERE id = $1`, [approval.requester_id]);
+    }
+
+    // Se aprovado e é acesso ao projeto
+    if (action === 'approve' && approval.type === 'project_access') {
+      const targetProjectId = project_id || approval.request_data?.project_id;
+      const targetRole = assignRole || 'member';
+
+      if (targetProjectId) {
+        await query(
+          `INSERT INTO project_roles (project_id, member_id, role)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (project_id, member_id) DO UPDATE SET role = $3`,
+          [targetProjectId, approval.requester_id, targetRole]
+        );
+      }
+
+      await query(`UPDATE members SET is_approved = true WHERE id = $1`, [approval.requester_id]);
+    }
+
+    // Se aprovado e é acesso à org
     if (action === 'approve' && approval.type === 'org_access') {
+      const targetRole = assignRole || 'member';
       await query(
-        `UPDATE members SET is_approved = true WHERE id = $1`,
-        [approval.requester_id]
+        `INSERT INTO org_roles (workspace_id, member_id, role)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (workspace_id, member_id) DO UPDATE SET role = $3`,
+        [approval.workspace_id, approval.requester_id, targetRole]
       );
+      await query(`UPDATE members SET is_approved = true WHERE id = $1`, [approval.requester_id]);
     }
 
     return NextResponse.json(result.rows[0]);

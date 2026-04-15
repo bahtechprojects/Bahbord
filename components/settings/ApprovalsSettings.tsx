@@ -33,6 +33,9 @@ export default function ApprovalsSettings() {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>('pending');
+  const [projects, setProjects] = useState<Array<{ id: string; name: string; prefix: string }>>([]);
+  const [boards, setBoards] = useState<Array<{ id: string; name: string; project_id: string }>>([]);
+  const [approvalConfig, setApprovalConfig] = useState<Record<string, { board_id?: string; project_id?: string; role?: string }>>({});
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -45,13 +48,20 @@ export default function ApprovalsSettings() {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
+  // Carregar projetos e boards para seleção na aprovação
+  useEffect(() => {
+    fetch('/api/projects').then((r) => r.json()).then(setProjects).catch(() => {});
+    fetch('/api/options?type=boards').then((r) => r.json()).then(setBoards).catch(() => {});
+  }, []);
+
   async function handleAction(id: string, action: 'approve' | 'reject') {
     const note = action === 'reject' ? prompt('Motivo da rejeição (opcional):') : null;
+    const config = approvalConfig[id] || {};
     try {
       const res = await fetch('/api/approvals', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action, reviewer_note: note }),
+        body: JSON.stringify({ id, action, reviewer_note: note, ...config }),
       });
       if (res.ok) {
         toast(action === 'approve' ? 'Aprovado com sucesso' : 'Rejeitado', action === 'approve' ? 'success' : 'info');
@@ -133,23 +143,61 @@ export default function ApprovalsSettings() {
                   )}
                 </div>
 
-                {/* Action buttons (only for pending) */}
+                {/* Action buttons + assignment (only for pending) */}
                 {r.status === 'pending' && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => handleAction(r.id, 'approve')}
-                      className="flex items-center gap-1 rounded bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/25"
-                    >
-                      <Check size={13} />
-                      Aprovar
-                    </button>
-                    <button
-                      onClick={() => handleAction(r.id, 'reject')}
-                      className="flex items-center gap-1 rounded bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20"
-                    >
-                      <X size={13} />
-                      Rejeitar
-                    </button>
+                  <div className="shrink-0 space-y-2">
+                    {/* Seletor de board/projeto para direcionar acesso */}
+                    {(r.type === 'board_access' || r.type === 'org_access') && (
+                      <div className="space-y-1">
+                        <select
+                          value={approvalConfig[r.id]?.project_id || ''}
+                          onChange={(e) => {
+                            setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], project_id: e.target.value, board_id: '' } }));
+                          }}
+                          className="w-full rounded border border-white/[0.08] bg-[#1e2126] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                        >
+                          <option value="">Selecionar projeto...</option>
+                          {projects.map((p) => <option key={p.id} value={p.id}>{p.prefix} - {p.name}</option>)}
+                        </select>
+                        {approvalConfig[r.id]?.project_id && (
+                          <select
+                            value={approvalConfig[r.id]?.board_id || ''}
+                            onChange={(e) => setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], board_id: e.target.value } }))}
+                            className="w-full rounded border border-white/[0.08] bg-[#1e2126] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                          >
+                            <option value="">Selecionar board...</option>
+                            {boards.filter((b) => b.project_id === approvalConfig[r.id]?.project_id).map((b) => (
+                              <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                          </select>
+                        )}
+                        <select
+                          value={approvalConfig[r.id]?.role || 'viewer'}
+                          onChange={(e) => setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], role: e.target.value } }))}
+                          className="w-full rounded border border-white/[0.08] bg-[#1e2126] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                        >
+                          <option value="viewer">Viewer (somente leitura)</option>
+                          <option value="member">Member (criar tickets)</option>
+                          <option value="admin">Admin (gerenciar)</option>
+                        </select>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleAction(r.id, 'approve')}
+                        className="flex items-center gap-1 rounded bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/25"
+                      >
+                        <Check size={13} />
+                        Aprovar
+                      </button>
+                      <button
+                        onClick={() => handleAction(r.id, 'reject')}
+                        className="flex items-center gap-1 rounded bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20"
+                      >
+                        <X size={13} />
+                        Rejeitar
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
