@@ -38,7 +38,7 @@ export default function Sidebar() {
   const [boards, setBoards] = useState<Array<{ id: string; name: string; type: string; project_id: string }>>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isApproved, setIsApproved] = useState<boolean>(true);
-  const { currentProjectId, recentBoards, setProject, setBoard } = useProject();
+  const { currentProjectId, currentBoardId, recentBoards, setProject, setBoard } = useProject();
 
   const isAdminUser = userRole === 'owner' || userRole === 'admin';
 
