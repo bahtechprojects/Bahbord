@@ -88,7 +88,7 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
       service_name,
       service_color,
       assignee_name,
-      assignee_avatar,
+      (SELECT m.avatar_url FROM members m WHERE m.id = assignee_id) AS assignee_avatar,
       status_name,
       ticket_key,
       type_icon,
