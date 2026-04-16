@@ -31,6 +31,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <html lang="pt-BR" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function(){
+              try {
+                var t = localStorage.getItem('bahjira-theme') || 'dark';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                if (t === 'dark') { document.documentElement.classList.add('dark'); document.documentElement.style.colorScheme = 'dark'; }
+                else { document.documentElement.classList.remove('dark'); document.documentElement.style.colorScheme = 'light'; }
+              } catch(e) { document.documentElement.classList.add('dark'); }
+            })();
+          `}} />
+        </head>
         <body>
           <ThemeProvider>
             <ProjectProvider>
