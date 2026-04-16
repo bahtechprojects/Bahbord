@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
-import { Columns3, CheckCircle2, Clock, AlertCircle, TrendingUp, Users } from 'lucide-react';
+import { Columns3, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 export default async function HomePage() {
   const [
@@ -164,85 +164,15 @@ export default async function HomePage() {
               })}
             </div>
 
-            {/* Charts row 1 - Type delivery */}
+            {/* All Charts */}
             <DashboardCharts
               byStatus={byStatus.rows as any[]}
               byService={byService.rows as any[]}
               byPriority={byPriority.rows as any[]}
               byType={byType.rows as any[]}
+              weeklyCompleted={weeklyCompleted.rows as any[]}
+              byAssignee={byAssignee.rows as any[]}
             />
-
-            {/* Charts row 2 - Weekly + Assignees */}
-            <div className="grid gap-4 lg:grid-cols-2">
-              {/* Weekly completed */}
-              <div className="card-premium p-5">
-                <h3 className="mb-4 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                  <div className="rounded-md bg-emerald-500/10 p-1.5">
-                    <TrendingUp size={14} className="text-emerald-400" />
-                  </div>
-                  Tickets concluídos por semana
-                </h3>
-                {weeklyCompleted.rows.length > 0 ? (
-                  <div className="flex items-end gap-3" style={{ height: 140 }}>
-                    {(weeklyCompleted.rows as any[]).map((w, i) => {
-                      const max = Math.max(...(weeklyCompleted.rows as any[]).map((x: any) => x.value), 1);
-                      const h = (w.value / max) * 100;
-                      return (
-                        <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                          <span className="text-[11px] font-bold text-slate-300">{w.value}</span>
-                          <div
-                            className="w-full rounded-lg bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-700 shadow-sm shadow-emerald-500/20"
-                            style={{ height: `${Math.max(h, 6)}%` }}
-                          />
-                          <span className="text-[10px] font-medium text-slate-500">{w.week}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex h-32 items-center justify-center">
-                    <p className="text-xs text-slate-600">Sem dados ainda</p>
-                  </div>
-                )}
-              </div>
-
-              {/* By assignee */}
-              <div className="card-premium p-5">
-                <h3 className="mb-4 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-slate-500">
-                  <div className="rounded-md bg-blue-500/10 p-1.5">
-                    <Users size={14} className="text-blue-400" />
-                  </div>
-                  Tickets por responsável
-                </h3>
-                {(byAssignee.rows as any[]).length > 0 ? (
-                  <div className="space-y-3">
-                    {(byAssignee.rows as any[]).map((a) => {
-                      const max = Math.max(...(byAssignee.rows as any[]).map((x: any) => x.total), 1);
-                      const pct = (a.total / max) * 100;
-                      const donePct = a.total > 0 ? (a.done / a.total) * 100 : 0;
-                      return (
-                        <div key={a.name}>
-                          <div className="mb-1 flex items-center justify-between">
-                            <span className="truncate text-[12px] font-medium text-slate-300">{a.name}</span>
-                            <span className="text-[11px] font-semibold text-slate-400">{a.done}<span className="text-slate-600">/{a.total}</span></span>
-                          </div>
-                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface" style={{ width: `${pct}%` }}>
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500 shadow-sm shadow-blue-500/20"
-                              style={{ width: `${donePct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex h-32 items-center justify-center">
-                    <p className="text-xs text-slate-600">Sem dados ainda</p>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Recent tickets - Premium */}
             <div className="card-premium overflow-hidden">
