@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, createContext, useContext } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import CreateTicketModal, { type CreateTicketModalRef } from './CreateTicketModal';
@@ -40,6 +41,7 @@ const statusKeyToName: Record<string, string> = {
 export default function BoardShell({ services, statuses, ticketTypes, children }: BoardShellProps) {
   const modalRef = useRef<CreateTicketModalRef>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const router = useRouter();
 
   function createInColumn(statusKey: string) {
     const statusName = statusKeyToName[statusKey];
@@ -58,7 +60,7 @@ export default function BoardShell({ services, statuses, ticketTypes, children }
           </main>
         </div>
         <CreateTicketModal ref={modalRef} services={services} statuses={statuses} ticketTypes={ticketTypes} />
-        <TicketDetailModal ticketId={selectedTicketId} onClose={() => setSelectedTicketId(null)} />
+        <TicketDetailModal ticketId={selectedTicketId} onClose={() => { setSelectedTicketId(null); router.refresh(); }} />
         <RecentBoardTracker />
       </div>
     </BoardShellContext.Provider>
