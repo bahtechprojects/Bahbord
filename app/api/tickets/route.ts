@@ -91,13 +91,24 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status_key' }, { status: 400 });
     }
 
+    // Find status by name (case-insensitive, with LIKE for partial match)
+    const statusResult = await query(
+      `SELECT id FROM statuses WHERE UPPER(name) = UPPER($1) LIMIT 1`,
+      [statusName]
+    );
+
+    if (!statusResult.rows[0]) {
+      return NextResponse.json({ error: `Status "${statusName}" não encontrado` }, { status: 404 });
+    }
+
     const result = await query(
       `UPDATE tickets
-       SET status_id = (SELECT id FROM statuses WHERE name = $1),
-           updated_at = NOW()
+       SET status_id = $1,
+           updated_at = NOW(),
+           completed_at = CASE WHEN (SELECT is_done FROM statuses WHERE id = $1) = true THEN COALESCE(completed_at, NOW()) ELSE NULL END
        WHERE id = $2
        RETURNING *`,
-      [statusName, ticketId]
+      [statusResult.rows[0].id, ticketId]
     );
 
     if (result.rowCount === 0) {

@@ -189,13 +189,17 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
     }
 
     try {
-      await fetch('/api/tickets', {
+      const res = await fetch('/api/tickets', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: active.id, status_key: overContainer })
       });
-    } catch (error) {
-      console.error('Falha ao atualizar ticket:', error);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(err.error || 'Erro ao mover ticket', 'error');
+      }
+    } catch {
+      toast('Erro ao mover ticket', 'error');
     }
   }, [items, wipLimits, toast]);
 
