@@ -57,6 +57,39 @@ html.dark {
   --glow-accent: rgba(59,130,246,0.08);
 }
 
+/* Light mode text overrides - fix white text being invisible */
+:root:not(.dark) .text-white { color: #1a1a1a !important; }
+:root:not(.dark) .text-slate-200 { color: #374151 !important; }
+:root:not(.dark) .text-slate-300 { color: #4b5563 !important; }
+:root:not(.dark) .text-slate-400 { color: #6b7280 !important; }
+:root:not(.dark) .text-slate-500 { color: #9ca3af !important; }
+:root:not(.dark) .text-slate-600 { color: #d1d5db !important; }
+:root:not(.dark) .hover\:text-white:hover { color: #1a1a1a !important; }
+:root:not(.dark) .hover\:text-slate-200:hover { color: #374151 !important; }
+:root:not(.dark) .hover\:text-slate-300:hover { color: #4b5563 !important; }
+:root:not(.dark) .placeholder\:text-slate-500::placeholder { color: #9ca3af !important; }
+:root:not(.dark) .placeholder\:text-slate-600::placeholder { color: #9ca3af !important; }
+
+/* Light mode background overrides */
+:root:not(.dark) .bg-white\/\[0\.03\] { background-color: rgba(0,0,0,0.02) !important; }
+:root:not(.dark) .bg-white\/\[0\.04\] { background-color: rgba(0,0,0,0.03) !important; }
+:root:not(.dark) .bg-white\/\[0\.06\] { background-color: rgba(0,0,0,0.04) !important; }
+:root:not(.dark) .bg-white\/\[0\.08\] { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0,0,0,0.03) !important; }
+:root:not(.dark) .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0,0,0,0.05) !important; }
+
+/* Light mode border overrides */
+:root:not(.dark) .border-white\/\[0\.06\] { border-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .border-white\/\[0\.08\] { border-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .border-white\/\[0\.04\] { border-color: rgba(0,0,0,0.06) !important; }
+:root:not(.dark) .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.06) !important; }
+
+/* Light mode ring/shadow */
+:root:not(.dark) .ring-\[#232730\] { --tw-ring-color: #ffffff !important; }
+:root:not(.dark) .shadow-black\/60 { --tw-shadow-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.05) !important; }
+
 html {
   background: var(--bg-primary);
   color: var(--text-primary);
