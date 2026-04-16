@@ -40,13 +40,30 @@ export async function POST(request: Request) {
         const workspaceId = wsResult.rows[0]?.id;
         if (!workspaceId) break;
 
-        await query(
-          `INSERT INTO members (workspace_id, user_id, clerk_user_id, display_name, email, role, is_approved)
-           VALUES ($1, $2, $3, $4, $5, 'member', false)
-           ON CONFLICT (workspace_id, user_id) DO UPDATE
-           SET display_name = $4, email = $5, clerk_user_id = $3`,
-          [workspaceId, id, id, displayName, email]
+        // Try to link by email first
+        const existingByEmail = await query(
+          `UPDATE members SET clerk_user_id = $1, display_name = $2
+           WHERE email = $3 AND clerk_user_id IS NULL RETURNING id`,
+          [id, displayName, email]
         );
+
+        if (!existingByEmail.rows[0]) {
+          const existingByClerk = await query(
+            `SELECT id FROM members WHERE clerk_user_id = $1`, [id]
+          );
+          if (existingByClerk.rows[0]) {
+            await query(
+              `UPDATE members SET display_name = $1, email = $2 WHERE clerk_user_id = $3`,
+              [displayName, email, id]
+            );
+          } else {
+            await query(
+              `INSERT INTO members (workspace_id, user_id, clerk_user_id, display_name, email, role, is_approved)
+               VALUES ($1, gen_random_uuid(), $2, $3, $4, 'member', false)`,
+              [workspaceId, id, displayName, email]
+            );
+          }
+        }
         break;
       }
 
