@@ -84,7 +84,7 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
       id,
       title,
       priority,
-      to_char(due_date AT TIME ZONE 'America/Sao_Paulo', 'DD Mon') AS due,
+      to_char(due_date AT TIME ZONE 'America/Sao_Paulo', 'DD/MM') AS due,
       service_name,
       service_color,
       assignee_name,

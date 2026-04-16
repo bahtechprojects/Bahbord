@@ -168,7 +168,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="glass mt-8 mb-8 flex h-[calc(100vh-64px)] w-full max-w-[1100px] flex-col rounded-2xl shadow-2xl shadow-black/40"
+            className="glass mt-4 mb-4 md:mt-8 md:mb-8 flex h-[calc(100vh-32px)] md:h-[calc(100vh-64px)] w-full max-w-[1100px] mx-2 md:mx-0 flex-col rounded-2xl shadow-2xl shadow-black/40"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Loading */}
@@ -223,7 +223,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                 </div>
 
                 {/* Body — scrollable */}
-                <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
                   {/* Left column */}
                   <div className="flex-1 overflow-y-auto px-6 py-5">
                     {/* Title */}
@@ -305,7 +305,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                   </div>
 
                   {/* Right sidebar */}
-                  <div className="w-[320px] shrink-0 overflow-y-auto border-l border-white/[0.06] bg-sidebar px-5 py-5">
+                  <div className="w-full md:w-[320px] shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-white/[0.06] bg-sidebar px-5 py-5">
                     <TicketSidebar ticket={ticket} onUpdate={updateField} />
                     <div className="mt-4">
                       <TimeTracker ticketId={ticket.id} />

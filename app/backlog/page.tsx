@@ -55,9 +55,9 @@ export default async function BacklogPage() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-border/40 bg-surface2 overflow-hidden">
+            <div className="rounded-lg border border-border/40 bg-surface2 overflow-hidden overflow-x-auto">
               {/* Table header */}
-              <div className="flex items-center border-b border-border/40 bg-sidebar px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center border-b border-border/40 bg-sidebar px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 min-w-[700px]">
                 <span className="w-24 shrink-0">Key</span>
                 <span className="flex-1">Título</span>
                 <span className="w-32 shrink-0">Status</span>
@@ -77,7 +77,7 @@ export default async function BacklogPage() {
                   <p className="mt-1 text-xs text-slate-500">Todos os tickets estão em sprints.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-border/20">
+                <div className="divide-y divide-border/20 min-w-[700px]">
                   {tickets.map((t) => {
                     const prio = priorityLabels[t.priority] || priorityLabels.medium;
                     return (

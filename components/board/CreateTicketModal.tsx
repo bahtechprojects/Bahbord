@@ -207,7 +207,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -8 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="glass flex max-h-[92vh] w-full max-w-[520px] flex-col rounded-2xl shadow-2xl shadow-black/40"
+              className="glass flex max-h-[92vh] w-full max-w-[520px] mx-3 md:mx-0 flex-col rounded-2xl shadow-2xl shadow-black/40"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
