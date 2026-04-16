@@ -63,6 +63,16 @@ export async function POST(request: Request) {
       [wsId, project_id || null, name.trim(), goal || null, start_date || null, end_date || null]
     );
 
+    // Auto-create a board for this sprint inside the project
+    if (project_id) {
+      await query(
+        `INSERT INTO boards (project_id, name, type)
+         VALUES ($1, $2, 'sprint')
+         ON CONFLICT DO NOTHING`,
+        [project_id, name.trim()]
+      );
+    }
+
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (err) {
     console.error('POST /api/sprints error:', err);
