@@ -8,11 +8,35 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('project_id');
     const memberId = searchParams.get('member_id');
 
-    if (!projectId) {
-      return NextResponse.json({ error: 'project_id é obrigatório' }, { status: 400 });
+    let result;
+
+    // Without project_id: return all boards the member has access to
+    if (!projectId && memberId) {
+      const orgRole = await query(
+        `SELECT role FROM org_roles WHERE member_id = $1`, [memberId]
+      );
+      const isOrgAdmin = orgRole.rows[0] && ['owner', 'admin'].includes(orgRole.rows[0].role);
+
+      if (isOrgAdmin) {
+        result = await query(
+          `SELECT b.id, b.project_id, b.name, b.type FROM boards b ORDER BY b.name ASC`
+        );
+      } else {
+        result = await query(
+          `SELECT b.id, b.project_id, b.name, b.type FROM boards b
+           WHERE EXISTS (SELECT 1 FROM board_roles br WHERE br.board_id = b.id AND br.member_id = $1)
+              OR EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = b.project_id AND pr.member_id = $1)
+           ORDER BY b.name ASC`,
+          [memberId]
+        );
+      }
+      return NextResponse.json(result.rows);
     }
 
-    let result;
+    if (!projectId) {
+      result = await query(`SELECT b.id, b.project_id, b.name, b.type FROM boards b ORDER BY b.name ASC`);
+      return NextResponse.json(result.rows);
+    }
 
     if (memberId) {
       // Verificar se membro é admin do projeto ou da org
