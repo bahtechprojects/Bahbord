@@ -2,27 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light mode */
+/* Light mode - Clean white with dark sidebar */
 :root {
   color-scheme: light;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f7;
-  --bg-sidebar: #f0f1f3;
-  --bg-column: #f5f5f7;
-  --bg-input: #e8eaed;
-  --border-color: 212 214 219;
-  --border-solid: rgb(212, 214, 219);
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #ffffff;
+  --bg-sidebar: #1e2024;
+  --bg-column: #f1f3f5;
+  --bg-input: #ffffff;
+  --border-color: 218 220 224;
+  --border-solid: rgb(218, 220, 224);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --card-bg: #ffffff;
-  --card-border: rgba(0,0,0,0.08);
-  --card-hover: #f9fafb;
+  --card-border: rgba(0,0,0,0.06);
+  --card-hover: #f1f5f9;
   --modal-bg: #ffffff;
-  --overlay-subtle: rgba(0,0,0,0.04);
-  --overlay-hover: rgba(0,0,0,0.06);
-  --shadow-color: rgba(0,0,0,0.08);
-  --scrollbar-thumb: rgba(0,0,0,0.12);
-  --scrollbar-hover: rgba(0,0,0,0.2);
+  --overlay-subtle: rgba(0,0,0,0.03);
+  --overlay-hover: rgba(0,0,0,0.05);
+  --shadow-color: rgba(0,0,0,0.06);
+  --scrollbar-thumb: rgba(0,0,0,0.15);
+  --scrollbar-hover: rgba(0,0,0,0.25);
 }
 
 /* Dark mode */
@@ -57,38 +57,70 @@ html.dark {
   --glow-accent: rgba(59,130,246,0.08);
 }
 
-/* Light mode text overrides - fix white text being invisible */
-:root:not(.dark) .text-white { color: #1a1a1a !important; }
-:root:not(.dark) .text-slate-200 { color: #374151 !important; }
-:root:not(.dark) .text-slate-300 { color: #4b5563 !important; }
-:root:not(.dark) .text-slate-400 { color: #6b7280 !important; }
-:root:not(.dark) .text-slate-500 { color: #9ca3af !important; }
-:root:not(.dark) .text-slate-600 { color: #d1d5db !important; }
-:root:not(.dark) .hover\:text-white:hover { color: #1a1a1a !important; }
-:root:not(.dark) .hover\:text-slate-200:hover { color: #374151 !important; }
-:root:not(.dark) .hover\:text-slate-300:hover { color: #4b5563 !important; }
-:root:not(.dark) .placeholder\:text-slate-500::placeholder { color: #9ca3af !important; }
-:root:not(.dark) .placeholder\:text-slate-600::placeholder { color: #9ca3af !important; }
+/* ============================================
+   LIGHT MODE OVERRIDES
+   Sidebar stays dark, content area is light
+   ============================================ */
 
-/* Light mode background overrides */
+/* Text — strong contrast on light backgrounds */
+:root:not(.dark) .text-white { color: #0f172a !important; }
+:root:not(.dark) .text-slate-200 { color: #1e293b !important; }
+:root:not(.dark) .text-slate-300 { color: #334155 !important; }
+:root:not(.dark) .text-slate-400 { color: #475569 !important; }
+:root:not(.dark) .text-slate-500 { color: #64748b !important; }
+:root:not(.dark) .text-slate-600 { color: #94a3b8 !important; }
+:root:not(.dark) .hover\:text-white:hover { color: #0f172a !important; }
+:root:not(.dark) .hover\:text-slate-200:hover { color: #1e293b !important; }
+:root:not(.dark) .hover\:text-slate-300:hover { color: #334155 !important; }
+:root:not(.dark) .group-hover\:text-white:hover { color: #0f172a !important; }
+:root:not(.dark) .placeholder\:text-slate-500::placeholder { color: #94a3b8 !important; }
+:root:not(.dark) .placeholder\:text-slate-600::placeholder { color: #94a3b8 !important; }
+
+/* Backgrounds — visible contrast */
 :root:not(.dark) .bg-white\/\[0\.03\] { background-color: rgba(0,0,0,0.02) !important; }
 :root:not(.dark) .bg-white\/\[0\.04\] { background-color: rgba(0,0,0,0.03) !important; }
 :root:not(.dark) .bg-white\/\[0\.06\] { background-color: rgba(0,0,0,0.04) !important; }
 :root:not(.dark) .bg-white\/\[0\.08\] { background-color: rgba(0,0,0,0.05) !important; }
-:root:not(.dark) .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0,0,0,0.03) !important; }
-:root:not(.dark) .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0,0,0,0.06) !important; }
+:root:not(.dark) .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .hover\:bg-input\/20:hover { background-color: rgba(0,0,0,0.04) !important; }
 
-/* Light mode border overrides */
-:root:not(.dark) .border-white\/\[0\.06\] { border-color: rgba(0,0,0,0.08) !important; }
-:root:not(.dark) .border-white\/\[0\.08\] { border-color: rgba(0,0,0,0.1) !important; }
+/* Borders */
 :root:not(.dark) .border-white\/\[0\.04\] { border-color: rgba(0,0,0,0.06) !important; }
-:root:not(.dark) .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.06) !important; }
+:root:not(.dark) .border-white\/\[0\.06\] { border-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .border-white\/\[0\.08\] { border-color: rgba(0,0,0,0.12) !important; }
+:root:not(.dark) .border-white\/\[0\.1\] { border-color: rgba(0,0,0,0.12) !important; }
+:root:not(.dark) .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .divide-border\/20 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.08) !important; }
 
-/* Light mode ring/shadow */
+/* Shadows — lighter for white backgrounds */
 :root:not(.dark) .ring-\[#232730\] { --tw-ring-color: #ffffff !important; }
-:root:not(.dark) .shadow-black\/60 { --tw-shadow-color: rgba(0,0,0,0.1) !important; }
-:root:not(.dark) .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
-:root:not(.dark) .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .shadow-black\/60 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .shadow-black\/40 { --tw-shadow-color: rgba(0,0,0,0.06) !important; }
+:root:not(.dark) .shadow-black\/20 { --tw-shadow-color: rgba(0,0,0,0.04) !important; }
+
+/* Sidebar stays dark in light mode — don't invert text inside sidebar */
+:root:not(.dark) aside[role="navigation"] .text-white { color: #ffffff !important; }
+:root:not(.dark) aside[role="navigation"] .text-slate-200 { color: #e2e8f0 !important; }
+:root:not(.dark) aside[role="navigation"] .text-slate-300 { color: #cbd5e1 !important; }
+:root:not(.dark) aside[role="navigation"] .text-slate-400 { color: #94a3b8 !important; }
+:root:not(.dark) aside[role="navigation"] .text-slate-500 { color: #64748b !important; }
+:root:not(.dark) aside[role="navigation"] .text-slate-600 { color: #475569 !important; }
+:root:not(.dark) aside[role="navigation"] .hover\:text-white:hover { color: #ffffff !important; }
+:root:not(.dark) aside[role="navigation"] .hover\:text-slate-200:hover { color: #e2e8f0 !important; }
+:root:not(.dark) aside[role="navigation"] .hover\:text-slate-300:hover { color: #cbd5e1 !important; }
+:root:not(.dark) aside[role="navigation"] .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(255,255,255,0.04) !important; }
+:root:not(.dark) aside[role="navigation"] .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(255,255,255,0.06) !important; }
+:root:not(.dark) aside[role="navigation"] .bg-white\/\[0\.03\] { background-color: rgba(255,255,255,0.03) !important; }
+:root:not(.dark) aside[role="navigation"] .bg-white\/\[0\.04\] { background-color: rgba(255,255,255,0.04) !important; }
+:root:not(.dark) aside[role="navigation"] .bg-white\/\[0\.06\] { background-color: rgba(255,255,255,0.06) !important; }
+:root:not(.dark) aside[role="navigation"] .bg-white\/\[0\.08\] { background-color: rgba(255,255,255,0.08) !important; }
+:root:not(.dark) aside[role="navigation"] .border-white\/\[0\.06\] { border-color: rgba(255,255,255,0.06) !important; }
+:root:not(.dark) aside[role="navigation"] .border-white\/\[0\.08\] { border-color: rgba(255,255,255,0.08) !important; }
+:root:not(.dark) aside[role="navigation"] .invert { filter: none !important; }
+
+/* Glass effect in light mode */
+:root:not(.dark) .glass { background: rgba(255,255,255,0.8) !important; border-color: rgba(0,0,0,0.08) !important; }
 
 html {
   background: var(--bg-primary);
