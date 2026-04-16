@@ -52,12 +52,17 @@ export default function SprintsView() {
   useEffect(() => { fetchSprints(); }, [fetchSprints]);
 
   async function handleCreate() {
-    if (!newName.trim() || !newProjectId) return;
-    await fetch('/api/sprints', {
+    if (!newName.trim() || !newProjectId || !newStart || !newEnd) return;
+    const res = await fetch('/api/sprints', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), goal: newGoal || null, start_date: newStart || null, end_date: newEnd || null, project_id: newProjectId }),
+      body: JSON.stringify({ name: newName.trim(), goal: newGoal || null, start_date: newStart, end_date: newEnd, project_id: newProjectId }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Erro ao criar sprint');
+      return;
+    }
     setNewName('');
     setNewGoal('');
     setNewProjectId('');
@@ -268,7 +273,7 @@ export default function SprintsView() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-medium text-slate-500">Início</label>
+              <label className="mb-1 block text-[10px] font-medium text-slate-500">Início <span className="text-red-400">*</span></label>
               <input
                 type="date"
                 value={newStart}
@@ -277,7 +282,7 @@ export default function SprintsView() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-medium text-slate-500">Fim</label>
+              <label className="mb-1 block text-[10px] font-medium text-slate-500">Fim <span className="text-red-400">*</span></label>
               <input
                 type="date"
                 value={newEnd}
