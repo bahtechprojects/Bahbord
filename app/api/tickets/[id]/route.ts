@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
         tf.reporter_id, tf.reporter_name,
         tf.sprint_name,
         tf.subtask_count, tf.subtask_done_count, tf.comment_count,
-        t.ticket_type_id, t.sprint_id,
+        t.ticket_type_id, t.sprint_id, t.board_id, t.project_id,
         COALESCE((
           SELECT SUM(te.duration_minutes)
           FROM time_entries te

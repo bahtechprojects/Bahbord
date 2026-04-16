@@ -50,6 +50,8 @@ interface TicketSidebarProps {
     client_id: string | null;
     client_name: string | null;
     client_color: string | null;
+    board_id: string | null;
+    project_id: string | null;
   };
   onUpdate: (field: string, value: unknown) => Promise<void>;
 }
@@ -81,7 +83,27 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
         ]);
         if (statusRes.ok) setStatuses(await statusRes.json());
         if (serviceRes.ok) setServices(await serviceRes.json());
-        if (memberRes.ok) setMembers(await memberRes.json());
+        if (memberRes.ok) {
+          const allMembers = await memberRes.json();
+          // Filter members by board/project access if ticket has board_id
+          if (ticket.board_id || ticket.project_id) {
+            try {
+              const accessRes = await fetch(
+                `/api/members/by-access?${ticket.board_id ? `board_id=${ticket.board_id}` : `project_id=${ticket.project_id}`}`
+              );
+              if (accessRes.ok) {
+                const accessMembers = await accessRes.json();
+                setMembers(accessMembers);
+              } else {
+                setMembers(allMembers);
+              }
+            } catch {
+              setMembers(allMembers);
+            }
+          } else {
+            setMembers(allMembers);
+          }
+        }
         if (categoryRes.ok) setCategories(await categoryRes.json());
         if (sprintRes.ok) setSprints(await sprintRes.json());
         if (clientRes.ok) setClients(await clientRes.json());

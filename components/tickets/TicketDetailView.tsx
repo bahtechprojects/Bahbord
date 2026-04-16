@@ -59,6 +59,8 @@ interface TicketData {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  board_id: string | null;
+  project_id: string | null;
 }
 
 interface TicketDetailViewProps {
