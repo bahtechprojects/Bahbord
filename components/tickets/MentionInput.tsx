@@ -12,6 +12,7 @@ interface MentionInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onImagePaste?: (base64: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -21,6 +22,7 @@ export default function MentionInput({
   value,
   onChange,
   onSubmit,
+  onImagePaste,
   placeholder,
   className,
   disabled,
@@ -30,6 +32,7 @@ export default function MentionInput({
   const [filterText, setFilterText] = useState('');
   const [mentionStart, setMentionStart] = useState<number>(-1);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const membersLoaded = useRef(false);
@@ -154,6 +157,41 @@ export default function MentionInput({
     }
   }
 
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const base64 = ev.target?.result as string;
+          if (base64) {
+            setPastedImage(base64);
+            if (onImagePaste) {
+              onImagePaste(base64);
+            }
+            // Add indicator text
+            const prefix = value ? value + ' ' : '';
+            onChange(prefix + '📷 [imagem colada]');
+          }
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+  }
+
+  function removePastedImage() {
+    setPastedImage(null);
+    const cleaned = value.replace(/📷 \[imagem colada\]/g, '').trim();
+    onChange(cleaned);
+  }
+
   return (
     <div className="relative">
       <input
@@ -161,11 +199,29 @@ export default function MentionInput({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         placeholder={placeholder}
         className={className}
         disabled={disabled}
         autoComplete="off"
       />
+      {pastedImage && (
+        <div className="mt-2 relative inline-block">
+          <img
+            src={pastedImage}
+            alt="Imagem colada"
+            className="max-h-32 rounded-lg border border-white/[0.08]"
+          />
+          <button
+            type="button"
+            onClick={removePastedImage}
+            className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow hover:bg-red-400"
+            title="Remover imagem"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {showDropdown && filtered.length > 0 && (
         <div
           ref={dropdownRef}

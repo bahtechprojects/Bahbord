@@ -694,6 +694,8 @@ CREATE TABLE IF NOT EXISTS access_links (
   label TEXT NOT NULL,
   url TEXT NOT NULL,
   type TEXT DEFAULT 'link' CHECK (type IN ('link', 'staging', 'production', 'admin', 'docs', 'api')),
+  login TEXT,
+  password TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

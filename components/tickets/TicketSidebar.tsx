@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, SlidersHorizontal, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import Avatar from '@/components/ui/Avatar';
 
@@ -63,6 +63,10 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
   const [categories, setCategories] = useState<FieldOption[]>([]);
   const [sprints, setSprints] = useState<FieldOption[]>([]);
   const [clients, setClients] = useState<FieldOption[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const isAdmin = userRole === 'owner' || userRole === 'admin';
+  // Fields that only admins can edit
+  const adminOnlyFields = ['service_id', 'client_id', 'category_id', 'sprint_id', 'reporter_id'];
 
   useEffect(() => {
     async function fetchOptions() {
@@ -81,6 +85,12 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
         if (categoryRes.ok) setCategories(await categoryRes.json());
         if (sprintRes.ok) setSprints(await sprintRes.json());
         if (clientRes.ok) setClients(await clientRes.json());
+        // Get user role
+        const meRes = await fetch('/api/auth/me');
+        if (meRes.ok) {
+          const me = await meRes.json();
+          setUserRole(me?.member?.role || null);
+        }
       } catch (err) { console.error('Erro ao carregar opções:', err); }
     }
     fetchOptions();
@@ -103,11 +113,17 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
     displayKey?: string;
   }) {
     const isEditing = editingField === fieldName;
+    const isLocked = fieldName && adminOnlyFields.includes(fieldName) && !isAdmin;
 
     return (
       <div className="flex items-center justify-between py-2.5">
-        <span className="text-[13px] text-slate-500">{label}</span>
-        {fieldName && options && isEditing ? (
+        <span className="text-[13px] text-slate-500 flex items-center gap-1">
+          {label}
+          {isLocked && <Lock size={10} className="text-slate-600" />}
+        </span>
+        {isLocked ? (
+          <div className="max-w-[180px] text-right text-[13px]">{children}</div>
+        ) : fieldName && options && isEditing ? (
           <select
             autoFocus
             value={currentValue || ''}

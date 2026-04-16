@@ -7,8 +7,9 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
-  Heading2, Code, Link as LinkIcon, Minus, Undo, Redo
+  Heading2, Code, Link as LinkIcon, Minus, Undo, Redo, ImageIcon
 } from 'lucide-react';
+import Image from '@tiptap/extension-image';
 import { cn } from '@/lib/utils/cn';
 import { useEffect } from 'react';
 
@@ -39,6 +40,13 @@ export default function RichTextEditor({
         openOnClick: false,
         HTMLAttributes: { class: 'text-accent underline cursor-pointer' },
       }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg my-2',
+        },
+      }),
     ],
     content,
     editable,
@@ -51,6 +59,33 @@ export default function RichTextEditor({
           'prose prose-invert prose-sm max-w-none outline-none min-h-[80px] px-3 py-2 text-slate-300',
           minimal && 'min-h-[40px]'
         ),
+      },
+      handlePaste(view, event) {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) return false;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64 = e.target?.result as string;
+              if (base64) {
+                view.dispatch(
+                  view.state.tr.replaceSelectionWith(
+                    view.state.schema.nodes.image.create({ src: base64 })
+                  )
+                );
+              }
+            };
+            reader.readAsDataURL(file);
+            return true;
+          }
+        }
+        return false;
       },
     },
   });
@@ -71,6 +106,25 @@ export default function RichTextEditor({
     }
   }
 
+  function insertImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        if (base64 && editor) {
+          editor.chain().focus().setImage({ src: base64 }).run();
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
   const toolbarButtons = [
     { icon: Bold, action: () => editor.chain().focus().toggleBold().run(), active: editor.isActive('bold'), title: 'Negrito' },
     { icon: Italic, action: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive('italic'), title: 'Itálico' },
@@ -82,6 +136,7 @@ export default function RichTextEditor({
     'separator',
     { icon: Code, action: () => editor.chain().focus().toggleCodeBlock().run(), active: editor.isActive('codeBlock'), title: 'Código' },
     { icon: LinkIcon, action: setLink, active: editor.isActive('link'), title: 'Link' },
+    { icon: ImageIcon, action: insertImage, active: false, title: 'Imagem' },
     { icon: Minus, action: () => editor.chain().focus().setHorizontalRule().run(), active: false, title: 'Divisor' },
     'separator',
     { icon: Undo, action: () => editor.chain().focus().undo().run(), active: false, title: 'Desfazer' },

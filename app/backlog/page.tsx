@@ -35,7 +35,15 @@ export default async function BacklogPage() {
       to_char(created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS created
     FROM tickets_full
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY
+      CASE priority
+        WHEN 'urgent' THEN 1
+        WHEN 'high' THEN 2
+        WHEN 'medium' THEN 3
+        WHEN 'low' THEN 4
+        ELSE 5
+      END ASC,
+      created_at DESC
   `, params.length > 0 ? params : undefined);
 
   const tickets = result.rows as any[];

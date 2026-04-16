@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     }
 
     const result = await query(
-      `SELECT id, ticket_id, label, url, type, created_at
+      `SELECT id, ticket_id, label, url, type, login, password, created_at
        FROM access_links
        WHERE ticket_id = $1
        ORDER BY created_at ASC`,
@@ -33,17 +33,17 @@ export async function POST(request: Request) {
     await getAuthMember();
 
     const body = await request.json();
-    const { ticket_id, label, url, type } = body;
+    const { ticket_id, label, url, type, login, password } = body;
 
     if (!ticket_id || !label?.trim() || !url?.trim()) {
       return NextResponse.json({ error: 'ticket_id, label e url são obrigatórios' }, { status: 400 });
     }
 
     const result = await query(
-      `INSERT INTO access_links (ticket_id, label, url, type)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO access_links (ticket_id, label, url, type, login, password)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [ticket_id, label.trim(), url.trim(), type || 'link']
+      [ticket_id, label.trim(), url.trim(), type || 'link', login?.trim() || null, password?.trim() || null]
     );
 
     return NextResponse.json(result.rows[0], { status: 201 });

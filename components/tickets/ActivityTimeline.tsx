@@ -40,6 +40,7 @@ interface ActivityTimelineProps {
 export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('comments');
   const [newComment, setNewComment] = useState('');
+  const [pastedImageData, setPastedImageData] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
   const { activities } = useActivityLog(ticketId);
@@ -48,8 +49,19 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   const { confirm } = useConfirm();
 
   async function submitComment(text: string) {
-    await rawSubmitComment(text);
+    let commentBody = text;
+    if (pastedImageData) {
+      // Replace placeholder with actual inline image HTML
+      commentBody = commentBody.replace(
+        '📷 [imagem colada]',
+        ''
+      ).trim();
+      const imgTag = `<img src="${pastedImageData}" alt="Imagem colada" style="max-width:100%;border-radius:8px;margin-top:4px;" />`;
+      commentBody = commentBody ? `${commentBody}\n${imgTag}` : imgTag;
+    }
+    await rawSubmitComment(commentBody);
     setNewComment('');
+    setPastedImageData(null);
   }
 
   async function handleEditComment(id: string, body: string) {
@@ -144,6 +156,11 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
                 <button onClick={() => setEditingId(null)} className="text-[11px] text-slate-500 hover:text-slate-300">Cancelar</button>
               </div>
             </div>
+          ) : c.body.includes('<img ') ? (
+            <div
+              className="mt-1 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-300 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
+              dangerouslySetInnerHTML={{ __html: c.body }}
+            />
           ) : (
             <p className="mt-1 whitespace-pre-wrap text-[14px] leading-relaxed text-slate-300">{renderMentions(c.body)}</p>
           )}
@@ -214,7 +231,8 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
               value={newComment}
               onChange={setNewComment}
               onSubmit={() => submitComment(newComment)}
-              placeholder="Adicionar comentário..."
+              onImagePaste={(base64) => setPastedImageData(base64)}
+              placeholder="Adicionar comentário... (Ctrl+V para colar imagem)"
               className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-[13px] text-slate-200 outline-none placeholder:text-slate-600 transition focus:border-blue-500/30 focus:bg-white/[0.05]"
             />
           </div>

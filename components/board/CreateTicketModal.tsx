@@ -87,9 +87,26 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
           ]);
           if (mRes.ok) setMembers(await mRes.json());
           if (cRes.ok) setCategories(await cRes.json());
-          if (sRes.ok) setSprints(await sRes.json());
+          if (sRes.ok) {
+            const sprintList = await sRes.json();
+            setSprints(sprintList);
+            // Auto-select active sprint
+            const activeSprint = sprintList.find((s: any) => s.is_active);
+            if (activeSprint && !sprintId) setSprintId(activeSprint.id);
+          }
           if (svRes.ok) setAllServices(await svRes.json());
           if (clRes.ok) setClients(await clRes.json());
+
+          // Auto-set reporter to current user
+          if (!reporterId) {
+            try {
+              const meRes = await fetch('/api/auth/me');
+              if (meRes.ok) {
+                const me = await meRes.json();
+                if (me?.member?.id) setReporterId(me.member.id);
+              }
+            } catch {}
+          }
         } catch (err) { console.error('Erro ao carregar opções:', err); }
       }
       load();

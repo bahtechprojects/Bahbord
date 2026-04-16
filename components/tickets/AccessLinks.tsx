@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ExternalLink, Plus, X, Globe, Server, Shield, FileText, Code2, Link } from 'lucide-react';
+import { ExternalLink, Plus, X, Globe, Server, Shield, FileText, Code2, Link, Eye, EyeOff, Copy } from 'lucide-react';
 
 interface AccessLink {
   id: string;
   label: string;
   url: string;
   type: string;
+  login?: string;
+  password?: string;
 }
 
 const typeConfig: Record<string, { icon: typeof Globe; color: string; label: string }> = {
@@ -29,6 +31,9 @@ export default function AccessLinks({ ticketId }: AccessLinksProps) {
   const [label, setLabel] = useState('');
   const [url, setUrl] = useState('');
   const [type, setType] = useState('link');
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   const fetchLinks = useCallback(async () => {
     try {
@@ -44,11 +49,13 @@ export default function AccessLinks({ ticketId }: AccessLinksProps) {
     await fetch('/api/access-links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket_id: ticketId, label: label.trim(), url: url.trim(), type }),
+      body: JSON.stringify({ ticket_id: ticketId, label: label.trim(), url: url.trim(), type, login: login.trim() || null, password: password.trim() || null }),
     });
     setLabel('');
     setUrl('');
     setType('link');
+    setLogin('');
+    setPassword('');
     setShowAdd(false);
     await fetchLinks();
   }
@@ -72,26 +79,67 @@ export default function AccessLinks({ ticketId }: AccessLinksProps) {
             const cfg = typeConfig[link.type] || typeConfig.link;
             const Icon = cfg.icon;
             return (
-              <div key={link.id} className="group flex items-center gap-2 rounded-md px-1 py-1.5 transition hover:bg-white/[0.03]">
-                <Icon size={14} style={{ color: cfg.color }} />
-                <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase"
-                  style={{ backgroundColor: cfg.color + '20', color: cfg.color }}
-                >
-                  {cfg.label}
-                </span>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 truncate text-[13px] text-blue-400 hover:text-blue-300 hover:underline"
-                >
-                  {link.label}
-                  <ExternalLink size={10} className="ml-1 inline" />
-                </a>
-                <button onClick={() => handleRemove(link.id)} className="shrink-0 opacity-0 group-hover:opacity-100">
-                  <X size={13} className="text-slate-600 hover:text-red-400" />
-                </button>
+              <div key={link.id} className="group rounded-md px-1 py-1.5 transition hover:bg-white/[0.03]">
+                <div className="flex items-center gap-2">
+                  <Icon size={14} style={{ color: cfg.color }} />
+                  <span
+                    className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase"
+                    style={{ backgroundColor: cfg.color + '20', color: cfg.color }}
+                  >
+                    {cfg.label}
+                  </span>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 truncate text-[13px] text-blue-400 hover:text-blue-300 hover:underline"
+                  >
+                    {link.label}
+                    <ExternalLink size={10} className="ml-1 inline" />
+                  </a>
+                  <button onClick={() => handleRemove(link.id)} className="shrink-0 opacity-0 group-hover:opacity-100">
+                    <X size={13} className="text-slate-600 hover:text-red-400" />
+                  </button>
+                </div>
+                {(link.login || link.password) && (
+                  <div className="ml-5 mt-1 flex items-center gap-3 text-[11px] text-slate-400">
+                    {link.login && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-slate-500">Login:</span>
+                        <span className="text-slate-300">{link.login}</span>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(link.login!)}
+                          className="ml-0.5 text-slate-600 hover:text-slate-300 transition"
+                          title="Copiar login"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </span>
+                    )}
+                    {link.password && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-slate-500">Senha:</span>
+                        <span className="text-slate-300 font-mono text-[10px]">
+                          {visiblePasswords[link.id] ? link.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+                        </span>
+                        <button
+                          onClick={() => setVisiblePasswords(prev => ({ ...prev, [link.id]: !prev[link.id] }))}
+                          className="ml-0.5 text-slate-600 hover:text-slate-300 transition"
+                          title={visiblePasswords[link.id] ? 'Ocultar senha' : 'Mostrar senha'}
+                        >
+                          {visiblePasswords[link.id] ? <EyeOff size={11} /> : <Eye size={11} />}
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(link.password!)}
+                          className="ml-0.5 text-slate-600 hover:text-slate-300 transition"
+                          title="Copiar senha"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -121,10 +169,25 @@ export default function AccessLinks({ ticketId }: AccessLinksProps) {
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
             placeholder="https://..."
-            className="w-full rounded border border-white/[0.06] bg-[var(--modal-bg)] px-2 py-1 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
+            className="input-premium w-full rounded border border-white/[0.06] bg-[var(--modal-bg)] px-2 py-1 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
           />
+          <div className="flex gap-2">
+            <input
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
+              placeholder="Login (opcional)"
+              className="input-premium flex-1 rounded border border-white/[0.06] bg-[var(--modal-bg)] px-2 py-1 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
+            />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
+              placeholder="Senha (opcional)"
+              type="password"
+              className="input-premium flex-1 rounded border border-white/[0.06] bg-[var(--modal-bg)] px-2 py-1 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-blue-500/30"
+            />
+          </div>
           <div className="flex gap-2">
             <button onClick={handleAdd} className="rounded bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-blue-500">
               Adicionar
