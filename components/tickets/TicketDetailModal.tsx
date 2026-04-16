@@ -168,7 +168,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="mt-8 mb-8 flex h-[calc(100vh-64px)] w-full max-w-[1100px] flex-col rounded-xl border border-white/[0.08] bg-[var(--modal-bg)] shadow-2xl shadow-black/60"
+            className="glass mt-8 mb-8 flex h-[calc(100vh-64px)] w-full max-w-[1100px] flex-col rounded-2xl shadow-2xl shadow-black/40"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Loading */}

@@ -186,7 +186,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
 
     const modalTitle = `Criar ${selectedType?.name || 'Ticket'}`;
 
-    const selectClass = 'w-full rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-[13px] text-slate-200 outline-none transition focus:border-blue-500/40 focus:bg-white/[0.05]';
+    const selectClass = 'input-premium w-full';
     const labelClass = 'mb-1.5 block text-[12px] font-semibold text-slate-400';
     const requiredDot = <span className="text-red-400 ml-0.5">*</span>;
 
@@ -207,7 +207,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -8 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="flex max-h-[92vh] w-full max-w-[520px] flex-col rounded-xl border border-white/[0.08] bg-[var(--modal-bg)] shadow-2xl shadow-black/50"
+              className="glass flex max-h-[92vh] w-full max-w-[520px] flex-col rounded-2xl shadow-2xl shadow-black/40"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

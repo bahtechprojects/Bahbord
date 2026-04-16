@@ -81,7 +81,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="w-full max-w-[400px] rounded-xl border border-white/[0.08] bg-[var(--modal-bg)] p-6 shadow-2xl shadow-black/60"
+              className="glass w-full max-w-[400px] rounded-2xl p-6 shadow-2xl shadow-black/40"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col items-center text-center">
@@ -97,14 +97,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 <div className="flex w-full gap-3">
                   <button
                     onClick={() => handleClose(false)}
-                    className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-[13px] font-medium text-slate-300 transition hover:bg-white/[0.06]"
+                    className="btn-premium btn-secondary flex-1"
                   >
                     {state.options.cancelText || 'Cancelar'}
                   </button>
                   <button
                     autoFocus
                     onClick={() => handleClose(true)}
-                    className={`flex-1 rounded-lg px-4 py-2.5 text-[13px] font-medium text-white transition ${v.button}`}
+                    className={`btn-premium flex-1 text-white ${v.button}`}
                   >
                     {state.options.confirmText || 'Confirmar'}
                   </button>

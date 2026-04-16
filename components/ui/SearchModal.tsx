@@ -111,7 +111,7 @@ export default function SearchModal() {
       onClick={() => setIsOpen(false)}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-border/60 bg-surface2 shadow-2xl shadow-black/40 animate-scale-in"
+        className="glass w-full max-w-lg rounded-2xl shadow-2xl shadow-black/40 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
