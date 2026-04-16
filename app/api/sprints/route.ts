@@ -67,8 +67,7 @@ export async function POST(request: Request) {
     if (project_id) {
       await query(
         `INSERT INTO boards (project_id, name, type)
-         VALUES ($1, $2, 'sprint')
-         ON CONFLICT DO NOTHING`,
+         VALUES ($1, $2, 'scrum')`,
         [project_id, name.trim()]
       );
     }
