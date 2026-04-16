@@ -96,7 +96,7 @@ export default function Sidebar() {
             <span className="text-[10px] text-slate-500 mt-0.5 block">Organização</span>
           </div>
         )}
-        <button onClick={() => setMobileOpen(false)} className="text-slate-500 hover:text-slate-300 md:hidden">
+        <button onClick={() => setMobileOpen(false)} aria-label="Fechar menu" className="text-slate-500 hover:text-slate-300 md:hidden">
           <X size={18} />
         </button>
       </div>
@@ -120,6 +120,7 @@ export default function Sidebar() {
           <button
             onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
             title="Pesquisar (Ctrl+K)"
+            aria-label="Pesquisar"
             className="flex w-full items-center justify-center rounded-md p-2 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
           >
             <Search size={16} />
@@ -270,6 +271,7 @@ export default function Sidebar() {
       <div className="hidden px-3 pb-3 md:block">
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
           className={cn(
             'flex w-full items-center gap-2 rounded-md px-2.5 py-[6px] text-[12px] text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-400',
             collapsed && 'justify-center px-0'
@@ -286,6 +288,7 @@ export default function Sidebar() {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
+        aria-label="Abrir menu"
         className="fixed left-3 top-3 z-50 rounded-md bg-[var(--card-bg)] p-2 text-slate-400 shadow-lg hover:text-white md:hidden"
       >
         <Menu size={20} />
@@ -297,7 +300,7 @@ export default function Sidebar() {
       )}
 
       {/* Mobile sidebar */}
-      <aside className={cn(
+      <aside role="navigation" aria-label="Menu principal" className={cn(
         'fixed inset-y-0 left-0 z-50 w-[240px] flex-col bg-sidebar transition-transform duration-200 md:hidden',
         mobileOpen ? 'translate-x-0 flex' : '-translate-x-full'
       )}>
@@ -305,7 +308,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className={cn(
+      <aside role="navigation" aria-label="Menu principal" className={cn(
         'hidden shrink-0 flex-col bg-sidebar transition-all duration-200 md:flex',
         collapsed ? 'w-[56px]' : 'w-[240px]'
       )}>

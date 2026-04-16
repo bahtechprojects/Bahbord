@@ -71,6 +71,8 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
       {...attributes}
       {...listeners}
       onClick={() => { if (!isDragging) openTicket(id); }}
+      aria-label={ticketKey + ': ' + title}
+      role="button"
       className={cn(
         'card-premium group cursor-pointer',
         'hover:bg-[var(--card-hover)] hover:-translate-y-[1px]',
@@ -86,7 +88,10 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
           <TicketTypeIcon typeIcon={typeIcon} size="sm" showBackground={false} />
           <span className="font-mono text-[11px] font-bold text-slate-300">{ticketKey}</span>
           <span className="flex-1" />
-          <div className={cn('h-[7px] w-[7px] rounded-full', prio.dot)} title={prio.label} />
+          <span className={cn('flex items-center gap-1 text-[10px] font-medium', priority === 'urgent' ? 'text-red-400' : priority === 'high' ? 'text-orange-400' : 'text-slate-500')}>
+            <span className={cn('h-[7px] w-[7px] rounded-full', prio.dot)} />
+            {(priority === 'urgent' || priority === 'high') && <span>{prio.label}</span>}
+          </span>
         </div>
 
         {/* Title */}

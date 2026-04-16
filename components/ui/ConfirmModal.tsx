@@ -75,6 +75,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             transition={{ duration: 0.1 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={() => handleClose(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') handleClose(false); }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -82,6 +83,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
               className="glass w-full max-w-[400px] rounded-2xl p-6 shadow-2xl shadow-black/40"
+              role="dialog"
+              aria-modal="true"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col items-center text-center">

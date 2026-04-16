@@ -108,6 +108,7 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
   return (
     <section
       ref={setNodeRef}
+      aria-label={`Coluna ${title} - ${cards.length} tickets`}
       className={cn(
         'flex min-h-0 flex-col transition-all duration-200',
         isOver && 'bg-blue-500/[0.03] rounded-lg'
@@ -126,6 +127,7 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
           onClick={() => createInColumn(id)}
           className="rounded p-0.5 text-slate-600 transition hover:bg-white/[0.06] hover:text-slate-300"
           title="Criar ticket"
+          aria-label={`Criar ticket em ${title}`}
         >
           <Plus size={15} />
         </button>

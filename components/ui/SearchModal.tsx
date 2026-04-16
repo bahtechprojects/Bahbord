@@ -108,6 +108,8 @@ export default function SearchModal() {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 pt-[15vh] backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
       onClick={() => setIsOpen(false)}
     >
       <div

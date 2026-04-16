@@ -151,11 +151,11 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
           {/* Comment actions */}
           {!isEditing && (
             <div className="mt-1.5 flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Responder"><Reply size={13} /></button>
-              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Curtir"><ThumbsUp size={13} /></button>
-              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Reação"><Smile size={13} /></button>
-              <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Editar"><Pencil size={13} /></button>
-              <button onClick={() => handleDeleteComment(c.id)} className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-red-400" title="Remover"><Trash2 size={13} /></button>
+              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Responder" aria-label="Responder"><Reply size={13} /></button>
+              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Curtir" aria-label="Curtir"><ThumbsUp size={13} /></button>
+              <button className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Reação" aria-label="Reação"><Smile size={13} /></button>
+              <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300" title="Editar" aria-label="Editar"><Pencil size={13} /></button>
+              <button onClick={() => handleDeleteComment(c.id)} className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-red-400" title="Remover" aria-label="Remover"><Trash2 size={13} /></button>
             </div>
           )}
         </div>

@@ -42,7 +42,7 @@ export default function Header({ onCreateTicket }: HeaderProps) {
   }, [pathname]);
 
   return (
-    <header className="glass flex h-14 shrink-0 items-center justify-between px-5 z-10">
+    <header role="banner" className="glass flex h-14 shrink-0 items-center justify-between px-5 z-10">
       {/* Left side */}
       <div className="flex items-center gap-3 pl-10 md:pl-0">
         <h1 className="text-[15px] font-semibold text-primary">{pageTitle}</h1>
@@ -68,6 +68,7 @@ export default function Header({ onCreateTicket }: HeaderProps) {
           onClick={toggleTheme}
           className="flex items-center justify-center rounded-lg p-2 text-secondary transition-all hover:bg-[var(--overlay-hover)] hover:text-primary"
           title={resolvedTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          aria-label={resolvedTheme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
         >
           {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
