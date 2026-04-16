@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Plus, Sun, Moon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import NotificationCenter from '@/components/ui/NotificationCenter';
@@ -26,29 +26,33 @@ const pageTitles: Record<string, string> = {
 export default function Header({ onCreateTicket }: HeaderProps) {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || 'BahBoard';
+  const searchParams = useSearchParams();
   const { resolvedTheme, toggleTheme } = useTheme();
-  const [sprintName, setSprintName] = useState<string | null>(null);
+  const [boardName, setBoardName] = useState<string | null>(null);
+  const boardId = searchParams.get('board_id');
 
   useEffect(() => {
-    if (pathname === '/board') {
-      fetch('/api/sprints')
+    if (pathname === '/board' && boardId) {
+      fetch('/api/boards')
         .then((r) => r.ok ? r.json() : [])
-        .then((sprints) => {
-          const active = sprints.find((s: any) => s.is_active);
-          setSprintName(active?.name || null);
+        .then((boards) => {
+          const board = boards.find((b: any) => b.id === boardId);
+          setBoardName(board?.name || null);
         })
         .catch(() => {});
+    } else {
+      setBoardName(null);
     }
-  }, [pathname]);
+  }, [pathname, boardId]);
 
   return (
     <header role="banner" className="glass flex h-14 shrink-0 items-center justify-between px-5 z-10">
       {/* Left side */}
       <div className="flex items-center gap-3 pl-10 md:pl-0">
         <h1 className="text-[15px] font-semibold text-primary">{pageTitle}</h1>
-        {pathname === '/board' && sprintName && (
+        {pathname === '/board' && boardName && (
           <span className="badge bg-accent/10 text-accent">
-            {sprintName}
+            {boardName}
           </span>
         )}
       </div>
