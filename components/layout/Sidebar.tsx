@@ -131,28 +131,6 @@ export default function Sidebar() {
       {/* Hierarchy: Projects → Boards */}
       {!collapsed && projects.length > 0 && (
         <div className="px-3 pb-2">
-          {/* Recent boards */}
-          {recentBoards.length > 0 && (
-            <>
-              <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Recentes</span>
-              <div className="mt-1 mb-2 space-y-0.5">
-                {recentBoards.map((rb) => (
-                  <button
-                    key={rb.id}
-                    onClick={() => { setBoard(rb.id); setMobileOpen(false); window.location.href = `/board?board_id=${rb.id}`; }}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-[5px] text-[11px] text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 text-left"
-                  >
-                    <Columns3 size={12} className="text-slate-600 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="block truncate text-slate-400">{rb.name}</span>
-                      <span className="text-[9px] text-slate-600">{rb.projectName}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
           {/* Projects with boards */}
           <span className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Projetos</span>
           <div className="mt-1 space-y-0.5">
