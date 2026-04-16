@@ -129,9 +129,14 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
 
     const body = await request.json();
+
+    // Auto-set reporter to authenticated user if not provided
+    if (!body.reporter_id && auth?.id) {
+      body.reporter_id = auth.id;
+    }
     const workspaceId = body.workspace_slug
       ? (await query(`SELECT id FROM workspaces WHERE slug = $1`, [body.workspace_slug])).rows[0]?.id
       : await getDefaultWorkspaceId();
