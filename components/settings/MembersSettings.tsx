@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Trash2, Link2, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
+import { UserPlus, Trash2, Link2, ChevronDown, ChevronRight, FolderOpen, RefreshCw } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { useToast } from '@/components/ui/Toast';
@@ -49,6 +49,31 @@ export default function MembersSettings() {
   const [selectedBoard, setSelectedBoard] = useState('');
   const [selectedBoardRole, setSelectedBoardRole] = useState('member');
   const [memberBoards, setMemberBoards] = useState<Array<{ board_id: string; board_name: string; project_name: string; role: string }>>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSyncClerk(autoApprove: boolean) {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/members/sync-clerk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auto_approve: autoApprove }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(err.error || 'Erro ao sincronizar', 'error');
+        return;
+      }
+      const summary = await res.json();
+      const msg = `${summary.created} criado(s), ${summary.linked_by_email} vinculado(s) por email, ${summary.updated} atualizado(s)`;
+      toast(msg, 'success');
+      await loadGrouped();
+    } catch (err) {
+      toast('Falha na sincronização', 'error');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function loadMemberBoards(memberId: string) {
     try {
@@ -308,8 +333,25 @@ export default function MembersSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Membros</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-[11px] text-slate-500">Membros entram via aprovação</span>
+          <button
+            onClick={() => handleSyncClerk(false)}
+            disabled={syncing}
+            title="Puxa todos os usuários do Clerk e cria pedidos de aprovação"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-surface2 px-2.5 py-1 text-xs text-slate-200 transition hover:border-accent/60 hover:text-accent disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
+            {syncing ? 'Sincronizando…' : 'Sincronizar com Clerk'}
+          </button>
+          <button
+            onClick={() => handleSyncClerk(true)}
+            disabled={syncing}
+            title="Puxa do Clerk e já aprova automaticamente (cuidado: dá acesso imediato)"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-surface2 px-2.5 py-1 text-xs text-slate-200 transition hover:border-emerald-500/60 hover:text-emerald-400 disabled:opacity-50"
+          >
+            Sync + auto-aprovar
+          </button>
           <button
             onClick={() => setShowInvite((v) => !v)}
             className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-surface2 px-2.5 py-1 text-xs text-slate-200 transition hover:border-accent/60 hover:text-accent"
