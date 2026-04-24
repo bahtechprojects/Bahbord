@@ -15,7 +15,7 @@ const config: Config = {
         column: 'var(--bg-column)',
         input: 'var(--bg-input)',
         border: 'rgb(var(--border-color) / <alpha-value>)',
-        accent: '#3b82f6',
+        accent: 'var(--accent)',
         success: '#22c55e',
         warning: '#f59e0b',
         danger: '#ef4444'

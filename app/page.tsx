@@ -154,10 +154,10 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
   const sprintName = sprint?.name || 'Sem sprint';
 
   const statCards = [
-    { label: 'Tickets ativos', value: stats.total_active, icon: Columns3, gradient: 'from-blue-600 to-blue-400', iconBg: 'bg-blue-500/20' },
-    { label: 'Sprint atual', value: sprintName, icon: Clock, gradient: 'from-violet-600 to-purple-400', iconBg: 'bg-violet-500/20' },
-    { label: 'Concluídos (30d)', value: stats.completed_month, icon: CheckCircle2, gradient: 'from-emerald-600 to-green-400', iconBg: 'bg-emerald-500/20' },
-    { label: 'Aguardando', value: stats.waiting, icon: AlertCircle, gradient: 'from-amber-600 to-yellow-400', iconBg: 'bg-amber-500/20' }
+    { label: 'Tickets ativos', value: stats.total_active, icon: Columns3 },
+    { label: 'Sprint atual', value: sprintName, icon: Clock },
+    { label: 'Concluídos · 30d', value: stats.completed_month, icon: CheckCircle2 },
+    { label: 'Aguardando', value: stats.waiting, icon: AlertCircle }
   ];
 
   const currentProject = safeProjectId
@@ -172,36 +172,31 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
         {tabsBoardId && <ViewTabsWrapper boardIdOverride={tabsBoardId} />}
         <main className="flex-1 overflow-auto p-6">
           <ApprovalGate>
-          <div className="mx-auto max-w-[1200px] space-y-6">
+          <div className="mx-auto max-w-[1200px] space-y-8">
             {/* Header */}
-            <div className="flex items-start justify-between flex-wrap gap-3">
+            <div className="flex items-end justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-white">
-                  {currentProject ? `Dashboard · ${currentProject.name}` : 'Dashboard'}
+                <h1 className="text-[22px] font-semibold text-primary tracking-tight">
+                  {currentProject ? `${currentProject.name}` : 'Dashboard'}
                 </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  {currentProject ? `Métricas do projeto ${currentProject.name}` : 'Visão geral do workspace Bah!Company'}
+                <p className="mt-1 text-[13px] text-secondary">
+                  {currentProject ? `Visão geral do projeto` : 'Visão geral do workspace'}
                 </p>
               </div>
               <ProjectFilter projects={projectsList.rows as any[]} />
             </div>
 
-            {/* Stat Cards - Premium */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Stat Cards - flat */}
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {statCards.map((card) => {
                 const Icon = card.icon;
                 return (
-                  <div key={card.label} className="card-premium group overflow-hidden relative">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-[0.06] group-hover:opacity-[0.12] transition-opacity`} />
-                    <div className="relative p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{card.label}</span>
-                        <div className={`rounded-lg p-2 ${card.iconBg}`}>
-                          <Icon size={16} className="text-white" />
-                        </div>
-                      </div>
-                      <p className="text-3xl font-bold text-white tracking-tight tabular-nums">{card.value}</p>
+                  <div key={card.label} className="card-premium p-4">
+                    <div className="flex items-center gap-2 text-secondary">
+                      <Icon size={13} strokeWidth={1.75} />
+                      <span className="text-[12px] font-medium">{card.label}</span>
                     </div>
+                    <p className="mt-3 text-[28px] font-semibold text-primary tracking-tight tabular-nums leading-none">{card.value}</p>
                   </div>
                 );
               })}
@@ -217,11 +212,11 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
               byAssignee={byAssignee.rows as any[]}
             />
 
-            {/* Recent tickets - Premium */}
+            {/* Recent tickets */}
             <div className="card-premium overflow-hidden">
-              <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
-                <h2 className="text-[13px] font-bold uppercase tracking-wider text-slate-300">Tickets recentes</h2>
-                <Link href={(tabsBoardId ? `/board?board_id=${tabsBoardId}` : '/board') as any} className="btn-premium btn-secondary text-[11px] py-1.5 px-3">
+              <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-3">
+                <h2 className="text-[13px] font-medium text-primary">Tickets recentes</h2>
+                <Link href={(tabsBoardId ? `/board?board_id=${tabsBoardId}` : '/board') as any} className="btn-premium btn-secondary text-[12px] py-1 px-2.5">
                   Ver board
                 </Link>
               </div>
