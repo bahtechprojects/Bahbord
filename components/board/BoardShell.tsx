@@ -58,6 +58,14 @@ export default function BoardShell({ services, statuses, ticketTypes, children }
     modalRef.current?.open(matchingStatus?.id);
   }
 
+  function handleCloseDetailModal(changed: boolean = true) {
+    setSelectedTicketId(null);
+    if (changed) {
+      // Force a full server-side reload to reflect changes
+      router.refresh();
+    }
+  }
+
   return (
     <BoardShellContext.Provider value={{ openTicket: setSelectedTicketId, createInColumn }}>
       <div className="flex h-screen overflow-hidden bg-surface text-primary">
@@ -70,7 +78,7 @@ export default function BoardShell({ services, statuses, ticketTypes, children }
           </main>
         </div>
         <CreateTicketModal ref={modalRef} services={services} statuses={statuses} ticketTypes={ticketTypes} />
-        <TicketDetailModal ticketId={selectedTicketId} onClose={() => { setSelectedTicketId(null); router.refresh(); }} />
+        <TicketDetailModal ticketId={selectedTicketId} onClose={() => handleCloseDetailModal(true)} />
         <RecentBoardTracker />
       </div>
     </BoardShellContext.Provider>

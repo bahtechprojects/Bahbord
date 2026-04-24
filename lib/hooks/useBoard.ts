@@ -49,6 +49,12 @@ export function useBoard(initialItems: BoardItems, wipLimits: Record<string, num
     projects: [],
   });
 
+  // Sync items when server re-fetches and props change
+  useEffect(() => {
+    setItems(initialItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(initialItems.todo.map(t => t.id)), JSON.stringify(initialItems.progress.map(t => t.id)), JSON.stringify(initialItems.done.map(t => t.id)), JSON.stringify(initialItems.waiting.map(t => t.id))]);
+
   const { toast } = useToast();
 
   // Supabase Realtime — atualizar board quando tickets mudam
