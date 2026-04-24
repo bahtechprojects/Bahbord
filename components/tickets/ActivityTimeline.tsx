@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Reply, ThumbsUp, Smile, Pencil, Trash2 } from 'lucide-react';
+import { Reply, ThumbsUp, Smile, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useActivityLog } from '@/lib/hooks/useActivityLog';
@@ -43,6 +43,9 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
   const [pastedImageData, setPastedImageData] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
   const { activities } = useActivityLog(ticketId);
   const { comments, isSubmitting, submitComment: rawSubmitComment, editComment, deleteComment } = useComments(ticketId);
   const { user } = useUser();
@@ -77,6 +80,33 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
       variant: 'danger',
     });
     if (ok) await deleteComment(id);
+  }
+
+  async function handleSummarizeThread() {
+    setAiSummaryError(null);
+    setAiSummaryLoading(true);
+    try {
+      const res = await fetch('/api/ai/summarize-thread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setAiSummaryError(data?.error || 'Erro ao gerar resumo');
+        return;
+      }
+      const data = await res.json();
+      if (!data.summary) {
+        setAiSummaryError('Não há comentários para resumir.');
+        return;
+      }
+      setAiSummary(data.summary);
+    } catch {
+      setAiSummaryError('Erro de conexão ao gerar resumo');
+    } finally {
+      setAiSummaryLoading(false);
+    }
   }
 
   function timeAgo(dateStr: string) {
@@ -254,9 +284,47 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
         )}
 
         {activeTab === 'comments' && (
-          comments.length > 0
-            ? comments.map(renderComment)
-            : <p className="py-6 text-center text-[13px] text-slate-600">Nenhum comentário ainda.</p>
+          <>
+            {comments.length > 0 && (
+              <div className="pb-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={handleSummarizeThread}
+                    disabled={aiSummaryLoading}
+                    className="flex items-center gap-1.5 rounded-md border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-300 transition hover:bg-violet-500/15 hover:text-violet-200 disabled:opacity-50"
+                  >
+                    <Sparkles size={12} className={aiSummaryLoading ? 'animate-pulse' : ''} />
+                    {aiSummaryLoading ? 'Resumindo...' : 'Resumir thread com IA'}
+                  </button>
+                  {aiSummary && (
+                    <button
+                      type="button"
+                      onClick={() => setAiSummary(null)}
+                      className="text-[11px] text-slate-500 hover:text-slate-300"
+                    >
+                      Limpar resumo
+                    </button>
+                  )}
+                </div>
+                {aiSummaryError && (
+                  <p className="mt-2 text-[12px] text-red-400">{aiSummaryError}</p>
+                )}
+                {aiSummary && (
+                  <div className="mt-2 rounded-lg border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 px-3.5 py-3">
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-300">
+                      <Sparkles size={11} />
+                      Resumo por IA
+                    </div>
+                    <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-200">{aiSummary}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {comments.length > 0
+              ? comments.map(renderComment)
+              : <p className="py-6 text-center text-[13px] text-slate-600">Nenhum comentário ainda.</p>}
+          </>
         )}
 
         {activeTab === 'history' && (

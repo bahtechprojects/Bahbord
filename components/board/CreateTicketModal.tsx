@@ -2,7 +2,7 @@
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, Minus, Maximize2, MoreHorizontal, AlertTriangle, ChevronDown } from 'lucide-react';
+import { X, Minus, Maximize2, MoreHorizontal, AlertTriangle, ChevronDown, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import RichTextEditor from '@/components/editor/RichTextEditor';
@@ -60,6 +60,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [createAnother, setCreateAnother] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
 
     // Options from API
     const [members, setMembers] = useState<SelectItem[]>([]);
@@ -353,7 +354,34 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
 
                   {/* Descrição */}
                   <div>
-                    <label className={labelClass}>Descrição</label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className={labelClass + ' mb-0'}>Descrição</label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!title.trim()) { setError('Digite o título primeiro'); return; }
+                          setAiLoading(true);
+                          try {
+                            const res = await fetch('/api/ai/generate-description', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ title }),
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              setDescription(data.description);
+                            }
+                          } finally {
+                            setAiLoading(false);
+                          }
+                        }}
+                        disabled={aiLoading}
+                        className="flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 disabled:opacity-50"
+                      >
+                        <Sparkles size={12} className={aiLoading ? 'animate-pulse' : ''} />
+                        {aiLoading ? 'Gerando...' : 'Gerar descrição com IA'}
+                      </button>
+                    </div>
                     <RichTextEditor
                       content={description}
                       onChange={setDescription}

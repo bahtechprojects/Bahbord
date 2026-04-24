@@ -4,6 +4,7 @@ import { dispatchWebhook } from '@/lib/webhooks';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
 import { hasTicketAccess } from '@/lib/access-check';
 import { createNotification } from '@/lib/notifications';
+import { runAutomations } from '@/lib/automations';
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   try {
@@ -71,14 +72,18 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const ticketId = params.id;
   const expectedUpdatedAt = body._updated_at; // OCC: versão esperada
 
-  // Capturar assignee anterior para detectar mudança e evitar notificação duplicada
+  // Capturar estado anterior (assignee e status) para detectar mudanças:
+  //   - evita notificação duplicada de atribuição
+  //   - permite disparar automações corretas (status_changed / assigned)
   let previousAssigneeId: string | null = null;
-  if ('assignee_id' in body) {
+  let previousStatusId: string | null = null;
+  if ('assignee_id' in body || 'status_id' in body) {
     const prevRes = await query(
-      `SELECT assignee_id FROM tickets WHERE id = $1`,
+      `SELECT assignee_id, status_id FROM tickets WHERE id = $1`,
       [ticketId]
     );
     previousAssigneeId = prevRes.rows[0]?.assignee_id ?? null;
+    previousStatusId = prevRes.rows[0]?.status_id ?? null;
   }
 
   const allowedFields: Record<string, string> = {
@@ -157,6 +162,30 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     } catch (notifyErr) {
       console.error('Erro ao notificar atribuição na atualização do ticket:', notifyErr);
     }
+  }
+
+  // Disparar automações baseadas nas mudanças detectadas
+  try {
+    if ('status_id' in body && ticket.status_id !== previousStatusId) {
+      await runAutomations({
+        ticket,
+        event: 'ticket.status_changed',
+        workspace_id: ticket.workspace_id,
+        actor_id: auth?.id,
+        changes: { status_id: { from: previousStatusId, to: ticket.status_id } },
+      });
+    }
+    if ('assignee_id' in body && ticket.assignee_id !== previousAssigneeId) {
+      await runAutomations({
+        ticket,
+        event: 'ticket.assigned',
+        workspace_id: ticket.workspace_id,
+        actor_id: auth?.id,
+        changes: { assignee_id: { from: previousAssigneeId, to: ticket.assignee_id } },
+      });
+    }
+  } catch (automationErr) {
+    console.error('Erro ao executar automações:', automationErr);
   }
 
   return NextResponse.json(ticket);

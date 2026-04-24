@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; /* Inter stylistic alternatives */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular numbers for tables and metrics */
+.tabular-nums, .font-mono, [class*="font-mono"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' on, 'cv11' on;
+}
+
+/* Letter-spacing adjustments */
+h1, .text-2xl, .text-xl { letter-spacing: -0.02em; }
+h2, .text-lg { letter-spacing: -0.015em; }
+.text-base, .text-sm { letter-spacing: -0.005em; }
+.uppercase, [class*="uppercase"] { letter-spacing: 0.02em; }
+
 /* Light mode - Clean white with dark sidebar */
 :root {
   color-scheme: light;
@@ -131,7 +155,7 @@ body {
   min-height: 100vh;
   margin: 0;
   background: var(--bg-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

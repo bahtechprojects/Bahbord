@@ -3,9 +3,11 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
-import { Calendar, Check } from 'lucide-react';
+import { Calendar, Check, Edit, Copy, Link as LinkIcon, Trash2, User, Flag } from 'lucide-react';
 import { useBoardShell } from './BoardShell';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
+import Tooltip from '@/components/ui/Tooltip';
+import { ContextMenu } from '@/components/ui/ContextMenu';
 
 const priorityConfig: Record<string, { dot: string; border: string; label: string }> = {
   urgent: { dot: 'bg-red-500 shadow-red-500/40 shadow-sm', border: 'border-l-red-500', label: 'Urgente' },
@@ -65,6 +67,33 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
   const svc = hasService ? getServiceInlineStyle(serviceColor ?? null) : null;
 
   return (
+    <ContextMenu
+      items={[
+        {
+          label: 'Abrir ticket',
+          icon: <Edit size={14} />,
+          onSelect: () => openTicket(id),
+        },
+        {
+          label: 'Copiar link',
+          icon: <LinkIcon size={14} />,
+          onSelect: () => {
+            if (typeof window !== 'undefined') {
+              navigator.clipboard.writeText(`${window.location.origin}/ticket/${id}`);
+            }
+          },
+        },
+        {
+          label: 'Copiar key',
+          icon: <Copy size={14} />,
+          onSelect: () => {
+            if (typeof navigator !== 'undefined') {
+              navigator.clipboard.writeText(ticketKey);
+            }
+          },
+        },
+      ]}
+    >
     <article
       ref={setNodeRef}
       style={style}
@@ -86,10 +115,12 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
         {/* Row 1: Type + Key + Priority */}
         <div className="mb-2 flex items-center gap-1.5">
           <TicketTypeIcon typeIcon={typeIcon} size="sm" showBackground={false} />
-          <span className="font-mono text-[11px] font-bold text-slate-300">{ticketKey}</span>
+          <span className="font-mono tabular-nums text-[11px] font-bold text-slate-300">{ticketKey}</span>
           <span className="flex-1" />
           <span className={cn('flex items-center gap-1 text-[10px] font-medium', priority === 'urgent' ? 'text-red-400' : priority === 'high' ? 'text-orange-400' : 'text-slate-500')}>
-            <span className={cn('h-[7px] w-[7px] rounded-full', prio.dot)} />
+            <Tooltip content={`Prioridade: ${prio.label}`}>
+              <span className={cn('h-[7px] w-[7px] rounded-full', prio.dot)} />
+            </Tooltip>
             {(priority === 'urgent' || priority === 'high') && <span>{prio.label}</span>}
           </span>
         </div>
@@ -160,5 +191,6 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
         </div>
       </div>
     </article>
+    </ContextMenu>
   );
 }

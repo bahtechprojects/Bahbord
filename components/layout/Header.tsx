@@ -21,6 +21,7 @@ const pageTitles: Record<string, string> = {
   '/timesheet': 'Timesheet',
   '/settings': 'Configurações',
   '/docs': 'Documentação',
+  '/reports': 'Relatórios',
 };
 
 export default function Header({ onCreateTicket }: HeaderProps) {

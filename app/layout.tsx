@@ -1,12 +1,20 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ThemeProvider } from '@/lib/theme-context';
 import { ProjectProvider } from '@/lib/project-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmModal';
-import SearchModal from '@/components/ui/SearchModal';
+// import SearchModal from '@/components/ui/SearchModal'; // fallback - substituído por CommandPalette
+import CommandPalette from '@/components/ui/CommandPalette';
 import KeyboardShortcuts from '@/components/ui/KeyboardShortcuts';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Bahboard',
@@ -30,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         },
       }}
     >
-      <html lang="pt-BR" suppressHydrationWarning>
+      <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
         <head>
           <script dangerouslySetInnerHTML={{ __html: `
             (function(){
@@ -49,7 +57,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ToastProvider>
                 <ConfirmProvider>
                   {children}
-                  <SearchModal />
+                  {/* <SearchModal /> */}
+                  <CommandPalette />
                   <KeyboardShortcuts />
                 </ConfirmProvider>
               </ToastProvider>

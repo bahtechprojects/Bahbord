@@ -210,7 +210,7 @@ export default function SprintsView() {
             </span>
           )}
 
-          <span className="ml-auto text-[11px] text-slate-400">
+          <span className="ml-auto text-[11px] text-slate-400 tabular-nums">
             {sprint.done_count}/{sprint.ticket_count} tickets
           </span>
 
@@ -236,7 +236,7 @@ export default function SprintsView() {
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
                 <span className="text-slate-500">Progresso</span>
-                <span className="text-slate-300">{Math.round(progress)}%</span>
+                <span className="text-slate-300 tabular-nums">{Math.round(progress)}%</span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
                 <div className="h-full rounded-full bg-success transition-all duration-500" style={{ width: `${progress}%` }} />

@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard, Columns3, Search, Settings,
   Menu, X, ChevronRight, PanelLeftClose, PanelLeft,
-  FolderKanban, History, Filter, Users, BookOpen
+  FolderKanban, History, Filter, Users, BookOpen, FileBarChart
 } from 'lucide-react';
 import { useProject } from '@/lib/project-context';
 import ChangelogPanel from '@/components/changelog/ChangelogPanel';
+import Tooltip from '@/components/ui/Tooltip';
 
 
 // Context para outros componentes saberem se sidebar está collapsed
@@ -66,10 +67,9 @@ export default function Sidebar() {
   function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
     const basePath = href.split('?')[0];
     const active = pathname === basePath;
-    return (
+    const button = (
       <button
         onClick={() => { setMobileOpen(false); window.location.href = href; }}
-        title={collapsed ? label : undefined}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
           active
@@ -83,6 +83,14 @@ export default function Sidebar() {
         {!collapsed && active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}
       </button>
     );
+    if (collapsed) {
+      return (
+        <Tooltip content={label} side="right">
+          {button}
+        </Tooltip>
+      );
+    }
+    return button;
   }
 
   const sidebarContent = (
@@ -217,6 +225,7 @@ export default function Sidebar() {
         {isAdminUser && <NavItem href="/projects" label="Projetos" icon={FolderKanban} />}
         {isAdminUser && <NavItem href="/clients" label="Clientes" icon={Users} />}
         {isAdminUser && <NavItem href="/teams" label="Equipes" icon={Users} />}
+        {isAdminUser && <NavItem href="/reports" label="Relatórios" icon={FileBarChart} />}
         {isAdminUser && (!collapsed ? (
           <button
             onClick={() => setChangelogOpen(true)}

@@ -24,7 +24,7 @@ function CustomTooltip({ active, payload }: any) {
   return (
     <div className="rounded-lg border border-white/10 bg-[#1e2126] px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
       <span className="text-slate-400">{payload[0].payload.name || payload[0].payload.week}: </span>
-      <span className="font-bold text-white">{payload[0].value}</span>
+      <span className="font-bold text-white tabular-nums">{payload[0].value}</span>
     </div>
   );
 }
@@ -80,9 +80,9 @@ export default function DashboardCharts({ byStatus, byService, byPriority, byTyp
                     </span>
                     <span className="truncate text-[11px] font-semibold text-slate-400">{t.name}</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">{t.value}</p>
+                  <p className="text-2xl font-bold text-white tabular-nums">{t.value}</p>
                   {typePeriod === 'all' && (
-                    <div className="mt-1 flex gap-2 text-[9px] text-slate-600">
+                    <div className="mt-1 flex gap-2 text-[9px] text-slate-600 tabular-nums">
                       <span>30d: {t.last_30d}</span>
                       <span>7d: {t.last_7d}</span>
                     </div>
@@ -115,7 +115,7 @@ export default function DashboardCharts({ byStatus, byService, byPriority, byTyp
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[12px] font-semibold text-slate-300">{p.name}</span>
-                      <span className="text-[13px] font-bold text-white">{p.value}</span>
+                      <span className="text-[13px] font-bold text-white tabular-nums">{p.value}</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
                       <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: p.color }} />
@@ -178,7 +178,7 @@ export default function DashboardCharts({ byStatus, byService, byPriority, byTyp
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-bold text-white">{totalTickets}</span>
+                <span className="text-2xl font-bold text-white tabular-nums">{totalTickets}</span>
                 <span className="text-[9px] text-slate-500">Total</span>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function DashboardCharts({ byStatus, byService, byPriority, byTyp
                 <div key={s.name} className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ backgroundColor: s.color }} />
                   <span className="truncate text-[11px] text-slate-400">{s.name}</span>
-                  <span className="ml-auto text-[11px] font-bold text-white">{s.value}</span>
+                  <span className="ml-auto text-[11px] font-bold text-white tabular-nums">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -231,13 +231,13 @@ export default function DashboardCharts({ byStatus, byService, byPriority, byTyp
                 <div key={a.name} className="rounded-xl bg-white/[0.03] border border-white/[0.04] p-4">
                   <p className="truncate text-[12px] font-semibold text-slate-300 mb-2">{a.name}</p>
                   <div className="flex items-end gap-2 mb-2">
-                    <span className="text-2xl font-bold text-white">{a.done}</span>
-                    <span className="text-[12px] text-slate-600 mb-0.5">/ {a.total}</span>
+                    <span className="text-2xl font-bold text-white tabular-nums">{a.done}</span>
+                    <span className="text-[12px] text-slate-600 mb-0.5 tabular-nums">/ {a.total}</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
                     <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700" style={{ width: `${donePct}%` }} />
                   </div>
-                  <p className="mt-1 text-[10px] text-slate-600">{donePct}% concluído</p>
+                  <p className="mt-1 text-[10px] text-slate-600 tabular-nums">{donePct}% concluído</p>
                 </div>
               );
             })}

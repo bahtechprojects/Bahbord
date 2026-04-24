@@ -168,7 +168,7 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
                           <Icon size={16} className="text-white" />
                         </div>
                       </div>
-                      <p className="text-3xl font-bold text-white tracking-tight">{card.value}</p>
+                      <p className="text-3xl font-bold text-white tracking-tight tabular-nums">{card.value}</p>
                     </div>
                   </div>
                 );

@@ -3,6 +3,7 @@ import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { dispatchWebhook } from '@/lib/webhooks';
 import { getAuthMember } from '@/lib/api-auth';
 import { createNotification } from '@/lib/notifications';
+import { runAutomations } from '@/lib/automations';
 
 export async function GET(request: Request) {
   try {
@@ -226,6 +227,14 @@ export async function POST(request: Request) {
 
     const ticket = result.rows[0];
     dispatchWebhook('ticket.created', ticket);
+
+    // Disparar automações (fire-and-forget safe: captura erros internamente)
+    await runAutomations({
+      ticket,
+      event: 'ticket.created',
+      workspace_id: workspaceId,
+      actor_id: auth?.id,
+    });
 
     // Notificar assignee caso o ticket tenha sido atribuído na criação a outra pessoa
     if (ticket.assignee_id && ticket.assignee_id !== auth?.id) {
