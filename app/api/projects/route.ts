@@ -127,12 +127,18 @@ export async function POST(request: Request) {
     );
 
     const project = result.rows[0];
+    const sprintBoardName = `01 ${project.name}`;
 
-    // Create default board for the project
+    // Create default board + active sprint ("01 <NOME_PROJETO>")
     await query(
       `INSERT INTO boards (project_id, name, type, is_default)
        VALUES ($1, $2, 'kanban', true)`,
-      [project.id, 'Board Principal']
+      [project.id, sprintBoardName]
+    );
+    await query(
+      `INSERT INTO sprints (workspace_id, project_id, name, is_active)
+       VALUES ($1, $2, $3, true)`,
+      [workspaceId, project.id, sprintBoardName]
     );
 
     // If template_id provided, log it for future use

@@ -19,14 +19,14 @@ export async function GET(request: Request) {
 
       if (isOrgAdmin) {
         result = await query(
-          `SELECT b.id, b.project_id, b.name, b.type FROM boards b ORDER BY b.name ASC`
+          `SELECT b.id, b.project_id, b.name, b.type, b.is_default FROM boards b ORDER BY b.is_default DESC, b.name ASC`
         );
       } else {
         result = await query(
-          `SELECT b.id, b.project_id, b.name, b.type FROM boards b
+          `SELECT b.id, b.project_id, b.name, b.type, b.is_default FROM boards b
            WHERE EXISTS (SELECT 1 FROM board_roles br WHERE br.board_id = b.id AND br.member_id = $1)
               OR EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = b.project_id AND pr.member_id = $1)
-           ORDER BY b.name ASC`,
+           ORDER BY b.is_default DESC, b.name ASC`,
           [memberId]
         );
       }
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     }
 
     if (!projectId) {
-      result = await query(`SELECT b.id, b.project_id, b.name, b.type FROM boards b ORDER BY b.name ASC`);
+      result = await query(`SELECT b.id, b.project_id, b.name, b.type, b.is_default FROM boards b ORDER BY b.is_default DESC, b.name ASC`);
       return NextResponse.json(result.rows);
     }
 

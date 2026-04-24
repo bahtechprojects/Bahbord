@@ -113,12 +113,18 @@ export async function PATCH(request: Request) {
           [wsId, data.name, data.prefix, data.description || null, data.color || '#3b82f6']
         );
 
-        // Criar board padrão
+        // Criar board + sprint ativa "01 <NOME_PROJETO>"
         if (project.rows[0]) {
+          const sprintName = `01 ${project.rows[0].name}`;
           await query(
             `INSERT INTO boards (project_id, name, type, is_default)
-             VALUES ($1, 'Board Principal', 'kanban', true)`,
-            [project.rows[0].id]
+             VALUES ($1, $2, 'kanban', true)`,
+            [project.rows[0].id, sprintName]
+          );
+          await query(
+            `INSERT INTO sprints (workspace_id, project_id, name, is_active)
+             VALUES ($1, $2, $3, true)`,
+            [wsId, project.rows[0].id, sprintName]
           );
 
           // Dar acesso admin ao requester no projeto
