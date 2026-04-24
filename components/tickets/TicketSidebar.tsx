@@ -66,9 +66,12 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
   const [sprints, setSprints] = useState<FieldOption[]>([]);
   const [clients, setClients] = useState<FieldOption[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
   const isAdmin = userRole === 'owner' || userRole === 'admin';
-  // Fields that only admins can edit
-  const adminOnlyFields = ['service_id', 'client_id', 'category_id', 'sprint_id', 'reporter_id'];
+  // Bah!Company é o projeto "interno" — nele os campos service/client ficam editáveis
+  const isBahCompany = projectName === 'Bah!Company';
+  // Fields that only admins can edit (em projetos externos, service e client são travados)
+  const adminOnlyFields = ['category_id', 'sprint_id', 'reporter_id'];
 
   useEffect(() => {
     async function fetchOptions() {
@@ -112,6 +115,15 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
         if (meRes.ok) {
           const me = await meRes.json();
           setUserRole(me?.member?.role || null);
+        }
+        // Get project name to determine if it's internal (Bah!Company)
+        if (ticket.project_id) {
+          const projRes = await fetch('/api/options?type=projects');
+          if (projRes.ok) {
+            const projs = await projRes.json();
+            const current = projs.find((p: any) => p.id === ticket.project_id);
+            setProjectName(current?.name || null);
+          }
         }
       } catch (err) { console.error('Erro ao carregar opções:', err); }
     }
@@ -273,19 +285,26 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
               )}
             </InfoRow>
 
-            {/* BAH! Serviço/Produto */}
-            <InfoRow label="BAH! Serviço/Produto" fieldName="service_id" options={services} currentValue={ticket.service_id}>
-              {ticket.service_name ? (
-                <span className="rounded border border-white/[0.1] px-2 py-0.5 text-[12px] font-medium text-slate-200">
-                  {ticket.service_name}
-                </span>
-              ) : (
-                <span className="text-slate-600">Nenhum</span>
-              )}
-            </InfoRow>
+            {/* BAH! Serviço/Produto - só no projeto interno Bah!Company */}
+            {isBahCompany && (
+              <InfoRow label="BAH! Serviço/Produto" fieldName="service_id" options={services} currentValue={ticket.service_id}>
+                {ticket.service_name ? (
+                  <span className="rounded border border-white/[0.1] px-2 py-0.5 text-[12px] font-medium text-slate-200">
+                    {ticket.service_name}
+                  </span>
+                ) : (
+                  <span className="text-slate-600">Nenhum</span>
+                )}
+              </InfoRow>
+            )}
 
-            {/* Cliente */}
-            <InfoRow label="Cliente" fieldName="client_id" options={clients} currentValue={ticket.client_id}>
+            {/* Cliente - travado em projetos externos (não editável) */}
+            <InfoRow
+              label="Cliente"
+              fieldName={isBahCompany ? 'client_id' : undefined}
+              options={clients}
+              currentValue={ticket.client_id}
+            >
               {ticket.client_name ? (
                 <span
                   className="rounded px-2 py-0.5 text-[12px] font-medium"

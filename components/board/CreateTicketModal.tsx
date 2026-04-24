@@ -116,13 +116,36 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
             const activeSprint = sprintList.find((s: any) => s.is_active);
             if (activeSprint && !sprintId) setSprintId(activeSprint.id);
           }
-          if (svRes.ok) setAllServices(await svRes.json());
-          // Filter clients by project context if available
+          if (svRes.ok) {
+            const svcList = await svRes.json();
+            setAllServices(svcList);
+            // Auto-select BAHTECH if empty
+            if (!serviceId) {
+              const bahtech = svcList.find((s: any) => s.name === 'BAHTECH');
+              if (bahtech) setServiceId(bahtech.id);
+            }
+          }
+          // Determine project name + auto-select client if external project
           if (currentProjectId) {
-            const byProjRes = await fetch(`/api/clients/by-project?project_id=${currentProjectId}`);
-            if (byProjRes.ok) {
-              const projClients = await byProjRes.json();
-              setClients(projClients);
+            const allProjRes = await fetch('/api/options?type=projects');
+            if (allProjRes.ok) {
+              const allProjs = await allProjRes.json();
+              const currentProj = allProjs.find((p: any) => p.id === currentProjectId);
+              const isExternal = currentProj && currentProj.name !== 'Bah!Company';
+
+              // For external projects, auto-fill client with project name
+              if (isExternal && clRes.ok && !clientId) {
+                const allClients = await clRes.json();
+                const matchClient = allClients.find((c: any) => c.name === currentProj.name);
+                if (matchClient) {
+                  setClientId(matchClient.id);
+                  setClients([matchClient]);
+                } else {
+                  setClients(allClients);
+                }
+              } else if (clRes.ok) {
+                setClients(await clRes.json());
+              }
             } else if (clRes.ok) {
               setClients(await clRes.json());
             }
