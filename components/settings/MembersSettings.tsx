@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, Link2 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 
 interface Member {
@@ -22,13 +22,42 @@ export default function MembersSettings() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [assignBoardMemberId, setAssignBoardMemberId] = useState<string | null>(null);
+  const [boards, setBoards] = useState<Array<{ id: string; name: string; project_id: string }>>([]);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedBoard, setSelectedBoard] = useState('');
+  const [selectedBoardRole, setSelectedBoardRole] = useState('member');
 
   useEffect(() => {
-    fetch('/api/options?type=members')
-      .then((r) => r.json())
-      .then((data) => { setMembers(data); setLoading(false); })
-      .catch((err) => { console.error('Erro ao carregar membros:', err); setLoading(false); });
+    Promise.all([
+      fetch('/api/options?type=members').then((r) => r.json()),
+      fetch('/api/boards').then((r) => r.ok ? r.json() : []),
+      fetch('/api/options?type=projects').then((r) => r.ok ? r.json() : []),
+    ]).then(([m, b, p]) => {
+      setMembers(m);
+      setBoards(b);
+      setProjects(p);
+      setLoading(false);
+    }).catch((err) => { console.error('Erro ao carregar:', err); setLoading(false); });
   }, []);
+
+  async function handleAssignBoard() {
+    if (!assignBoardMemberId || !selectedBoard) return;
+    const res = await fetch('/api/members/assign-board', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: assignBoardMemberId, board_id: selectedBoard, role: selectedBoardRole }),
+    });
+    if (res.ok) {
+      alert('Acesso atribuído com sucesso');
+      setAssignBoardMemberId(null);
+      setSelectedBoard('');
+      setSelectedBoardRole('member');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Erro ao atribuir');
+    }
+  }
 
   async function handleRoleChange(id: string, role: string) {
     await fetch('/api/members/role', {
@@ -136,15 +165,79 @@ export default function MembersSettings() {
                   </select>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => handleDeleteMember(m.id)} className="text-slate-600 transition hover:text-danger">
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setAssignBoardMemberId(m.id)}
+                      title="Atribuir acesso a board"
+                      className="text-slate-600 transition hover:text-accent"
+                    >
+                      <Link2 size={14} />
+                    </button>
+                    <button onClick={() => handleDeleteMember(m.id)} className="text-slate-600 transition hover:text-danger">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Modal de atribuir board */}
+      {assignBoardMemberId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setAssignBoardMemberId(null)}>
+          <div className="glass w-full max-w-md rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Atribuir acesso a board</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Membro: <span className="font-medium text-slate-200">{members.find(m => m.id === assignBoardMemberId)?.display_name}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Board</label>
+                <select
+                  value={selectedBoard}
+                  onChange={(e) => setSelectedBoard(e.target.value)}
+                  className="input-premium w-full"
+                >
+                  <option value="">Selecionar board</option>
+                  {projects.map((p) => {
+                    const projectBoards = boards.filter((b) => b.project_id === p.id);
+                    if (projectBoards.length === 0) return null;
+                    return (
+                      <optgroup key={p.id} label={p.name}>
+                        {projectBoards.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Função no board</label>
+                <select
+                  value={selectedBoardRole}
+                  onChange={(e) => setSelectedBoardRole(e.target.value)}
+                  className="input-premium w-full"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="member">Membro</option>
+                  <option value="viewer">Visualizador</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setAssignBoardMemberId(null)} className="btn-premium btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleAssignBoard} disabled={!selectedBoard} className="btn-premium btn-primary disabled:opacity-50">
+                Atribuir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
