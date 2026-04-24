@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { X, Minus, Maximize2, MoreHorizontal, AlertTriangle, ChevronDown } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,6 +38,8 @@ const descriptionTemplates: Record<string, string> = {
 const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProps>(
   function CreateTicketModal({ services: initialServices, statuses: initialStatuses, ticketTypes: initialTicketTypes }, ref) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const urlBoardId = searchParams.get('board_id');
     const { toast } = useToast();
     const { currentProjectId, currentBoardId } = useProject();
     const [isOpen, setIsOpen] = useState(false);
@@ -186,7 +188,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
             category_id: categoryId || null,
             sprint_id: sprintId || null,
             project_id: currentProjectId || null,
-            board_id: currentBoardId || null,
+            board_id: urlBoardId || currentBoardId || null,
           })
         });
 

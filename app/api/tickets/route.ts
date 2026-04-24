@@ -137,6 +137,12 @@ export async function POST(request: Request) {
     if (!body.reporter_id && auth?.id) {
       body.reporter_id = auth.id;
     }
+
+    // Auto-resolve project_id from board_id if only board_id is provided
+    if (body.board_id && !body.project_id) {
+      const boardRes = await query(`SELECT project_id FROM boards WHERE id = $1`, [body.board_id]);
+      if (boardRes.rows[0]) body.project_id = boardRes.rows[0].project_id;
+    }
     const workspaceId = body.workspace_slug
       ? (await query(`SELECT id FROM workspaces WHERE slug = $1`, [body.workspace_slug])).rows[0]?.id
       : await getDefaultWorkspaceId();
