@@ -85,20 +85,19 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="rounded-md p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"><ArrowLeft size={18} /></button>
-          <div>
-          <h1 className="text-xl font-bold text-white">Projetos</h1>
-          <p className="mt-1 text-sm text-slate-500">{projects.length} projeto{projects.length !== 1 ? 's' : ''}</p>
-          </div>
+    <div className="mx-auto max-w-[1100px] space-y-8">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="space-y-2">
+          <p className="page-eyebrow">Workspace · {projects.length} projeto{projects.length !== 1 ? 's' : ''} ativo{projects.length !== 1 ? 's' : ''}</p>
+          <h1 className="page-title">
+            Projetos <span className="em">— cada coisa no seu lugar.</span>
+          </h1>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 rounded bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
+          className="btn-premium btn-primary"
         >
-          <Plus size={15} />
+          <Plus size={13} strokeWidth={2.5} />
           Novo projeto
         </button>
       </div>
@@ -134,35 +133,64 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((p) => (
           <div
             key={p.id}
             onClick={() => openProject(p)}
-            className="group cursor-pointer rounded-lg border border-border/40 bg-surface2 p-5 transition hover:border-white/[0.12] hover:bg-[var(--card-hover)]"
+            className="card-premium group cursor-pointer p-4 transition"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg text-[14px] font-bold text-white" style={{ backgroundColor: p.color }}>
-                {p.prefix.substring(0, 2)}
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md text-[12px] font-bold text-white shrink-0" style={{ backgroundColor: p.color }}>
+                {p.prefix.substring(0, 3).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-[15px] font-semibold text-white truncate">{p.name}</h3>
-                <span className="text-[11px] font-mono text-slate-500">{p.prefix}</span>
+                <h3 className="text-[14px] font-semibold text-primary truncate">{p.name}</h3>
+                <p className="text-[11px] text-secondary mt-0.5">
+                  {p.description || 'Sem descrição'}
+                </p>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); handleArchive(p.id); }}
-                className="shrink-0 rounded p-1 text-slate-600 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                className="shrink-0 rounded p-1 text-[var(--text-tertiary)] opacity-0 transition hover:text-[var(--danger)] group-hover:opacity-100"
                 title="Arquivar"
+                aria-label="Arquivar"
               >
-                <Archive size={14} />
+                <Archive size={13} />
               </button>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-slate-500">
-              <span className="flex items-center gap-1"><FolderKanban size={12} /> {p.board_count || 0} boards</span>
-              <span>{p.ticket_count || 0} tickets</span>
+
+            <div className="flex items-center justify-between mb-2 text-[11px]">
+              <span className="font-mono tabular-nums text-[var(--text-tertiary)]">{p.prefix}</span>
+              <span className="font-medium text-secondary tabular-nums">{p.ticket_count || 0} tickets</span>
+            </div>
+
+            <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--overlay-subtle)]">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(100, ((p.ticket_count || 0) / 50) * 100)}%`, backgroundColor: p.color }}
+              />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-[11px]">
+              <span className="text-[var(--text-tertiary)] flex items-center gap-1">
+                <FolderKanban size={11} />
+                {p.board_count || 0} board{p.board_count !== 1 ? 's' : ''}
+              </span>
+              <span className="text-[var(--accent)] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Abrir →</span>
             </div>
           </div>
         ))}
+
+        {/* Empty state card */}
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex min-h-[160px] flex-col items-center justify-center rounded-md border border-dashed border-[var(--card-border)] bg-transparent text-secondary transition hover:border-[var(--accent)] hover:text-primary"
+        >
+          <Plus size={20} strokeWidth={1.5} />
+          <span className="mt-2 text-[13px] font-medium">Criar projeto</span>
+          <span className="mt-1 text-[11px] text-[var(--text-tertiary)]">Comece com um template ou do zero</span>
+        </button>
       </div>
     </div>
   );

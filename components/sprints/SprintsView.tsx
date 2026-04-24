@@ -282,19 +282,23 @@ export default function SprintsView() {
     );
   }
 
+  const currentProject = currentProjectId ? projects.find((p) => p.id === currentProjectId) : null;
+
   return (
-    <div className="mx-auto max-w-[900px] space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Sprints</h1>
-          <p className="mt-1 text-sm text-slate-500">Gerenciar ciclos de trabalho</p>
+    <div className="mx-auto max-w-[900px] space-y-8">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="space-y-2">
+          <p className="page-eyebrow">{currentProject ? `${currentProject.name} · Sprints` : 'Workspace · Sprints'}</p>
+          <h1 className="page-title">
+            Sprints <span className="em">— onde o tempo vira progresso.</span>
+          </h1>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 rounded bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
+          className="btn-premium btn-primary"
         >
-          <Plus size={15} />
-          Novo sprint
+          <Plus size={13} strokeWidth={2.5} />
+          Nova sprint
         </button>
       </div>
 

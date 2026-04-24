@@ -43,10 +43,15 @@ export default function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   return (
-    <div className="mx-auto max-w-[1000px]">
-      <h1 className="mb-6 text-xl font-bold text-white">Configurações</h1>
+    <div className="mx-auto max-w-[1100px]">
+      <div className="mb-8 space-y-2">
+        <p className="page-eyebrow">Workspace · Configurações</p>
+        <h1 className="page-title">
+          Ajustes do <span className="em">workspace.</span>
+        </h1>
+      </div>
 
-      <div className="flex gap-6">
+      <div className="flex gap-8">
         {/* Sidebar navigation */}
         <nav className="w-48 shrink-0 space-y-0.5">
           {tabs.map((tab, index) => {
