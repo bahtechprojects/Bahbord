@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Sun, Moon, Monitor, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
 interface Workspace {
@@ -19,7 +19,25 @@ export default function GeneralSettings() {
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  async function handleSyncOrphans() {
+    if (!confirm('Sincronizar tickets sem projeto? Os tickets serão atribuídos aos projetos baseado no acesso do relator/responsável.')) return;
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/tickets/sync-project', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`${data.synced} ticket(s) sincronizado(s) com sucesso.`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Erro ao sincronizar');
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     fetch('/api/settings')
@@ -101,6 +119,22 @@ export default function GeneralSettings() {
           </button>
           {saved && <span className="text-xs text-success">Salvo com sucesso!</span>}
         </div>
+      </div>
+
+      {/* Sync orphan tickets */}
+      <div className="rounded-lg border border-border/40 bg-surface2 p-5 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-1">Sincronizar tickets</h3>
+          <p className="text-xs text-slate-500">Atribui tickets sem projeto aos projetos corretos, baseado no acesso do relator/responsável.</p>
+        </div>
+        <button
+          onClick={handleSyncOrphans}
+          disabled={syncing}
+          className="btn-premium btn-secondary"
+        >
+          <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+          {syncing ? 'Sincronizando...' : 'Sincronizar tickets órfãos'}
+        </button>
       </div>
 
       {/* Theme */}

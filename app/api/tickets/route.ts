@@ -143,6 +143,34 @@ export async function POST(request: Request) {
       const boardRes = await query(`SELECT project_id FROM boards WHERE id = $1`, [body.board_id]);
       if (boardRes.rows[0]) body.project_id = boardRes.rows[0].project_id;
     }
+
+    // If no project_id/board_id, infer from user's access
+    if (!body.project_id && !body.board_id && auth?.id) {
+      // Try project_roles first
+      const projRes = await query(
+        `SELECT project_id FROM project_roles WHERE member_id = $1 LIMIT 1`,
+        [auth.id]
+      );
+      if (projRes.rows[0]) {
+        body.project_id = projRes.rows[0].project_id;
+        // Get default board of that project
+        const boardRes = await query(
+          `SELECT id FROM boards WHERE project_id = $1 ORDER BY is_default DESC, created_at ASC LIMIT 1`,
+          [body.project_id]
+        );
+        if (boardRes.rows[0]) body.board_id = boardRes.rows[0].id;
+      } else {
+        // Try board_roles
+        const brRes = await query(
+          `SELECT b.id, b.project_id FROM board_roles br JOIN boards b ON b.id = br.board_id WHERE br.member_id = $1 LIMIT 1`,
+          [auth.id]
+        );
+        if (brRes.rows[0]) {
+          body.board_id = brRes.rows[0].id;
+          body.project_id = brRes.rows[0].project_id;
+        }
+      }
+    }
     const workspaceId = body.workspace_slug
       ? (await query(`SELECT id FROM workspaces WHERE slug = $1`, [body.workspace_slug])).rows[0]?.id
       : await getDefaultWorkspaceId();
