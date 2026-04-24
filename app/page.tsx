@@ -2,17 +2,40 @@ export const dynamic = "force-dynamic";
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import ProjectFilter from '@/components/dashboard/ProjectFilter';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
 import { Columns3, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
-export default async function HomePage({ searchParams }: { searchParams: { project_id?: string } }) {
-  const { project_id } = await searchParams;
-  const projectFilter = project_id ? `AND project_id = '${project_id}'` : '';
-  const projectFilterWhere = project_id ? `WHERE is_archived = false AND project_id = '${project_id}'` : `WHERE is_archived = false`;
-  const sprintFilter = project_id ? `AND project_id = '${project_id}'` : '';
+export default async function HomePage({ searchParams }: { searchParams: { project_id?: string; board_id?: string } }) {
+  const sp = await searchParams;
+  let project_id = sp.project_id;
+
+  // If board_id is provided without project_id, resolve project from board
+  if (!project_id && sp.board_id) {
+    const b = await query<{ project_id: string }>(`SELECT project_id FROM boards WHERE id = $1`, [sp.board_id]);
+    project_id = b.rows[0]?.project_id;
+  }
+
+  // Basic UUID guard to prevent SQL injection via interpolation below
+  const isValidUuid = typeof project_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(project_id);
+  const safeProjectId = isValidUuid ? project_id : undefined;
+
+  // Resolve a board_id for the ViewTabs (prefer the one in URL, else the project's default)
+  let tabsBoardId: string | undefined = sp.board_id;
+  if (!tabsBoardId && safeProjectId) {
+    const defaultBoard = await query<{ id: string }>(
+      `SELECT id FROM boards WHERE project_id = $1 ORDER BY is_default DESC, created_at ASC LIMIT 1`,
+      [safeProjectId]
+    );
+    tabsBoardId = defaultBoard.rows[0]?.id;
+  }
+
+  const projectFilter = safeProjectId ? `AND project_id = '${safeProjectId}'` : '';
+  const projectFilterWhere = safeProjectId ? `WHERE is_archived = false AND project_id = '${safeProjectId}'` : `WHERE is_archived = false`;
+  const sprintFilter = safeProjectId ? `AND project_id = '${safeProjectId}'` : '';
 
   const [
     ticketStats, sprintRow, recentTickets,
@@ -137,19 +160,28 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
     { label: 'Aguardando', value: stats.waiting, icon: AlertCircle, gradient: 'from-amber-600 to-yellow-400', iconBg: 'bg-amber-500/20' }
   ];
 
+  const currentProject = safeProjectId
+    ? (projectsList.rows as Array<{ id: string; name: string }>).find((p) => p.id === safeProjectId)
+    : undefined;
+
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
+        {tabsBoardId && <ViewTabsWrapper boardIdOverride={tabsBoardId} />}
         <main className="flex-1 overflow-auto p-6">
           <ApprovalGate>
           <div className="mx-auto max-w-[1200px] space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-                <p className="mt-1 text-sm text-slate-500">Visão geral do workspace Bah!Company</p>
+                <h1 className="text-2xl font-bold text-white">
+                  {currentProject ? `Dashboard · ${currentProject.name}` : 'Dashboard'}
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  {currentProject ? `Métricas do projeto ${currentProject.name}` : 'Visão geral do workspace Bah!Company'}
+                </p>
               </div>
               <ProjectFilter projects={projectsList.rows as any[]} />
             </div>
@@ -189,7 +221,7 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
             <div className="card-premium overflow-hidden">
               <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
                 <h2 className="text-[13px] font-bold uppercase tracking-wider text-slate-300">Tickets recentes</h2>
-                <Link href="/board" className="btn-premium btn-secondary text-[11px] py-1.5 px-3">
+                <Link href={(tabsBoardId ? `/board?board_id=${tabsBoardId}` : '/board') as any} className="btn-premium btn-secondary text-[11px] py-1.5 px-3">
                   Ver board
                 </Link>
               </div>

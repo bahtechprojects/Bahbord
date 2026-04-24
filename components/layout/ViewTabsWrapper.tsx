@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import ViewTabs from './ViewTabs';
 
-export default function ViewTabsWrapper() {
+export default function ViewTabsWrapper({ boardIdOverride }: { boardIdOverride?: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -13,5 +13,5 @@ export default function ViewTabsWrapper() {
     }).catch(() => {});
   }, []);
 
-  return <ViewTabs isAdmin={isAdmin} />;
+  return <ViewTabs isAdmin={isAdmin} boardIdOverride={boardIdOverride} />;
 }

@@ -2,10 +2,11 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Columns3, List, Inbox, Zap, CalendarDays, Clock } from 'lucide-react';
+import { Columns3, List, Inbox, Zap, CalendarDays, Clock, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const tabs = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/board', label: 'Quadro', icon: Columns3 },
   { href: '/list', label: 'Lista', icon: List },
   { href: '/backlog', label: 'Backlog', icon: Inbox },
@@ -16,12 +17,13 @@ const tabs = [
 
 interface ViewTabsProps {
   isAdmin?: boolean;
+  boardIdOverride?: string;
 }
 
-export default function ViewTabs({ isAdmin = false }: ViewTabsProps) {
+export default function ViewTabs({ isAdmin = false, boardIdOverride }: ViewTabsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const boardId = searchParams.get('board_id');
+  const boardId = boardIdOverride || searchParams.get('board_id');
   const queryString = boardId ? `?board_id=${boardId}` : '';
 
   const visibleTabs = tabs.filter((t) => !t.adminOnly || isAdmin);
