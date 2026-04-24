@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserPlus, Trash2, Link2 } from 'lucide-react';
+import { UserPlus, Trash2, Link2, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 
 interface Member {
@@ -11,11 +11,27 @@ interface Member {
   role: string;
   avatar_url: string | null;
   phone: string | null;
-  created_at: string;
+  project_role?: string | null;
+  board_name?: string | null;
+}
+
+interface ProjectGroup {
+  project_id: string;
+  project_name: string;
+  project_color: string | null;
+  project_prefix: string | null;
+  members: Member[];
+}
+
+interface GroupedResponse {
+  projects: ProjectGroup[];
+  unassigned: Member[];
 }
 
 export default function MembersSettings() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [unassigned, setUnassigned] = useState<Member[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null);
   const [phoneValue, setPhoneValue] = useState('');
@@ -38,18 +54,74 @@ export default function MembersSettings() {
     } catch {}
   }
 
+  async function loadGrouped() {
+    const res = await fetch('/api/members/grouped-by-project');
+    if (res.ok) {
+      const data: GroupedResponse = await res.json();
+      setGroups(data.projects || []);
+      setUnassigned(data.unassigned || []);
+      // Default: all collapsed except the first one
+      setExpanded((prev) => {
+        // preserve previous state if exists, else set default
+        if (Object.keys(prev).length > 0) return prev;
+        const next: Record<string, boolean> = {};
+        (data.projects || []).forEach((p, idx) => {
+          next[p.project_id] = idx === 0;
+        });
+        next['__unassigned__'] = false;
+        return next;
+      });
+    }
+  }
+
   useEffect(() => {
     Promise.all([
-      fetch('/api/options?type=members').then((r) => r.json()),
+      fetch('/api/members/grouped-by-project').then((r) => r.ok ? r.json() : { projects: [], unassigned: [] }),
       fetch('/api/boards').then((r) => r.ok ? r.json() : []),
       fetch('/api/options?type=projects').then((r) => r.ok ? r.json() : []),
-    ]).then(([m, b, p]) => {
-      setMembers(m);
+    ]).then(([g, b, p]) => {
+      setGroups(g.projects || []);
+      setUnassigned(g.unassigned || []);
       setBoards(b);
       setProjects(p);
+      // Default: all collapsed except the first one
+      const next: Record<string, boolean> = {};
+      (g.projects || []).forEach((proj: ProjectGroup, idx: number) => {
+        next[proj.project_id] = idx === 0;
+      });
+      next['__unassigned__'] = false;
+      setExpanded(next);
       setLoading(false);
     }).catch((err) => { console.error('Erro ao carregar:', err); setLoading(false); });
   }, []);
+
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function updateMemberEverywhere(id: string, patch: Partial<Member>) {
+    setGroups((prev) => prev.map((g) => ({
+      ...g,
+      members: g.members.map((m) => m.id === id ? { ...m, ...patch } : m),
+    })));
+    setUnassigned((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
+  }
+
+  function removeMemberEverywhere(id: string) {
+    setGroups((prev) => prev.map((g) => ({
+      ...g,
+      members: g.members.filter((m) => m.id !== id),
+    })));
+    setUnassigned((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  function findMemberById(id: string): Member | undefined {
+    for (const g of groups) {
+      const m = g.members.find((x) => x.id === id);
+      if (m) return m;
+    }
+    return unassigned.find((x) => x.id === id);
+  }
 
   async function handleAssignBoard() {
     if (!assignBoardMemberId || !selectedBoard) return;
@@ -59,9 +131,10 @@ export default function MembersSettings() {
       body: JSON.stringify({ member_id: assignBoardMemberId, board_id: selectedBoard, role: selectedBoardRole }),
     });
     if (res.ok) {
-      // Reload member boards to show the newly added one
       if (assignBoardMemberId) await loadMemberBoards(assignBoardMemberId);
       setSelectedBoard('');
+      // Refresh grouped list since access changed
+      await loadGrouped();
     } else {
       const err = await res.json().catch(() => ({}));
       alert(err.error || 'Erro ao atribuir');
@@ -78,6 +151,7 @@ export default function MembersSettings() {
     });
     if (res.ok) {
       await loadMemberBoards(assignBoardMemberId);
+      await loadGrouped();
     }
   }
 
@@ -87,7 +161,7 @@ export default function MembersSettings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ member_id: id, role }),
     });
-    setMembers((prev) => prev.map((m) => m.id === id ? { ...m, role } : m));
+    updateMemberEverywhere(id, { role });
   }
 
   async function handlePhoneSave(id: string) {
@@ -96,7 +170,7 @@ export default function MembersSettings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'members', id, phone: phoneValue }),
     });
-    setMembers((prev) => prev.map((m) => m.id === id ? { ...m, phone: phoneValue || null } : m));
+    updateMemberEverywhere(id, { phone: phoneValue || null });
     setEditingPhoneId(null);
   }
 
@@ -110,15 +184,14 @@ export default function MembersSettings() {
     setInviteName('');
     setInviteEmail('');
     setShowInvite(false);
-    const res = await fetch('/api/options?type=members');
-    if (res.ok) setMembers(await res.json());
+    await loadGrouped();
   }
 
   async function handleDeleteMember(id: string) {
     if (!confirm('Remover este membro? Esta ação não pode ser desfeita.')) return;
     const res = await fetch(`/api/settings?table=members&id=${id}`, { method: 'DELETE' });
     if (res.ok) {
-      setMembers((prev) => prev.filter((m) => m.id !== id));
+      removeMemberEverywhere(id);
     }
   }
 
@@ -126,84 +199,201 @@ export default function MembersSettings() {
     return <div className="flex h-32 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" /></div>;
   }
 
+  const renderMemberRow = (m: Member) => (
+    <tr key={m.id} className="border-b border-border/20 last:border-0">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Avatar name={m.display_name} size="sm" />
+          <span className="text-slate-200">{m.display_name}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-slate-400">{m.email}</td>
+      <td className="px-4 py-3 text-slate-400">
+        {editingPhoneId === m.id ? (
+          <input
+            autoFocus
+            value={phoneValue}
+            onChange={(e) => setPhoneValue(e.target.value)}
+            onBlur={() => handlePhoneSave(m.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handlePhoneSave(m.id); if (e.key === 'Escape') setEditingPhoneId(null); }}
+            className="w-full rounded border border-border/40 bg-surface px-2 py-1 text-xs text-slate-200 outline-none"
+            placeholder="(00) 00000-0000"
+          />
+        ) : (
+          <button
+            onClick={() => { setEditingPhoneId(m.id); setPhoneValue(m.phone || ''); }}
+            className="text-xs text-slate-500 hover:text-slate-300"
+          >
+            {m.phone || 'Adicionar'}
+          </button>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        <select
+          value={m.role}
+          onChange={(e) => handleRoleChange(m.id, e.target.value)}
+          className="rounded border border-border/40 bg-surface px-2 py-1 text-xs text-slate-200 outline-none"
+        >
+          <option value="owner">Owner</option>
+          <option value="admin">Admin</option>
+          <option value="member">Membro</option>
+          <option value="viewer">Visualizador</option>
+        </select>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => { setAssignBoardMemberId(m.id); loadMemberBoards(m.id); }}
+            title="Atribuir acesso a board"
+            className="text-slate-600 transition hover:text-accent"
+          >
+            <Link2 size={14} />
+          </button>
+          <button onClick={() => handleDeleteMember(m.id)} className="text-slate-600 transition hover:text-danger">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+
+  const renderTableHeader = () => (
+    <thead>
+      <tr className="border-b border-border/40 text-left text-xs text-slate-500">
+        <th className="px-4 py-3 font-medium">Membro</th>
+        <th className="px-4 py-3 font-medium">Email</th>
+        <th className="px-4 py-3 font-medium">Telefone</th>
+        <th className="px-4 py-3 font-medium">Função</th>
+        <th className="px-4 py-3 font-medium w-16"></th>
+      </tr>
+    </thead>
+  );
+
+  const assignedMember = assignBoardMemberId ? findMemberById(assignBoardMemberId) : undefined;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Membros</h2>
-        <span className="text-[11px] text-slate-500">Membros entram via aprovação</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] text-slate-500">Membros entram via aprovação</span>
+          <button
+            onClick={() => setShowInvite((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-surface2 px-2.5 py-1 text-xs text-slate-200 transition hover:border-accent/60 hover:text-accent"
+          >
+            <UserPlus size={12} /> Convidar
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-lg border border-border/40 bg-surface2 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border/40 text-left text-xs text-slate-500">
-              <th className="px-4 py-3 font-medium">Membro</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Telefone</th>
-              <th className="px-4 py-3 font-medium">Função</th>
-              <th className="px-4 py-3 font-medium w-16"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m) => (
-              <tr key={m.id} className="border-b border-border/20 last:border-0">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Avatar name={m.display_name} size="sm" />
-                    <span className="text-slate-200">{m.display_name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-slate-400">{m.email}</td>
-                <td className="px-4 py-3 text-slate-400">
-                  {editingPhoneId === m.id ? (
-                    <input
-                      autoFocus
-                      value={phoneValue}
-                      onChange={(e) => setPhoneValue(e.target.value)}
-                      onBlur={() => handlePhoneSave(m.id)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handlePhoneSave(m.id); if (e.key === 'Escape') setEditingPhoneId(null); }}
-                      className="w-full rounded border border-border/40 bg-surface px-2 py-1 text-xs text-slate-200 outline-none"
-                      placeholder="(00) 00000-0000"
-                    />
+      {showInvite && (
+        <div className="rounded-lg border border-border/40 bg-surface2 p-4 space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+              placeholder="Nome"
+              className="rounded border border-border/40 bg-surface px-3 py-2 text-sm text-slate-200 outline-none"
+            />
+            <input
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Email"
+              type="email"
+              className="rounded border border-border/40 bg-surface px-3 py-2 text-sm text-slate-200 outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setShowInvite(false)} className="btn-premium btn-secondary">Cancelar</button>
+            <button onClick={handleInvite} disabled={!inviteName.trim() || !inviteEmail.trim()} className="btn-premium btn-primary disabled:opacity-50">Convidar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {groups.length === 0 && unassigned.length === 0 && (
+          <div className="rounded-lg border border-border/40 bg-surface2 p-6 text-center text-sm text-slate-500">
+            Nenhum membro encontrado.
+          </div>
+        )}
+
+        {groups.map((g) => {
+          const isOpen = !!expanded[g.project_id];
+          return (
+            <div key={g.project_id} className="rounded-lg border border-border/40 bg-surface2 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleExpanded(g.project_id)}
+                className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-surface3/40"
+              >
+                <div className="flex items-center gap-2">
+                  {isOpen ? (
+                    <ChevronDown size={14} className="text-slate-400" />
                   ) : (
-                    <button
-                      onClick={() => { setEditingPhoneId(m.id); setPhoneValue(m.phone || ''); }}
-                      className="text-xs text-slate-500 hover:text-slate-300"
-                    >
-                      {m.phone || 'Adicionar'}
-                    </button>
+                    <ChevronRight size={14} className="text-slate-400" />
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    value={m.role}
-                    onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                    className="rounded border border-border/40 bg-surface px-2 py-1 text-xs text-slate-200 outline-none"
-                  >
-                    <option value="owner">Owner</option>
-                    <option value="admin">Admin</option>
-                    <option value="member">Membro</option>
-                    <option value="viewer">Visualizador</option>
-                  </select>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => { setAssignBoardMemberId(m.id); loadMemberBoards(m.id); }}
-                      title="Atribuir acesso a board"
-                      className="text-slate-600 transition hover:text-accent"
-                    >
-                      <Link2 size={14} />
-                    </button>
-                    <button onClick={() => handleDeleteMember(m.id)} className="text-slate-600 transition hover:text-danger">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: g.project_color || '#3b82f6' }}
+                  />
+                  <span className="text-sm font-medium text-slate-100">{g.project_name}</span>
+                  {g.project_prefix && (
+                    <span className="text-[10px] uppercase tracking-wide text-slate-500">{g.project_prefix}</span>
+                  )}
+                </div>
+                <span className="text-xs text-slate-500">
+                  {g.members.length} {g.members.length === 1 ? 'membro' : 'membros'}
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="border-t border-border/40">
+                  {g.members.length === 0 ? (
+                    <div className="px-4 py-4 text-xs text-slate-500">Nenhum membro atribuído.</div>
+                  ) : (
+                    <table className="w-full text-sm">
+                      {renderTableHeader()}
+                      <tbody>{g.members.map(renderMemberRow)}</tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {unassigned.length > 0 && (
+          <div className="rounded-lg border border-border/40 bg-surface2 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleExpanded('__unassigned__')}
+              className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-surface3/40"
+            >
+              <div className="flex items-center gap-2">
+                {expanded['__unassigned__'] ? (
+                  <ChevronDown size={14} className="text-slate-400" />
+                ) : (
+                  <ChevronRight size={14} className="text-slate-400" />
+                )}
+                <FolderOpen size={14} className="text-slate-500" />
+                <span className="text-sm font-medium text-slate-100">Sem projeto</span>
+                <span className="text-[10px] uppercase tracking-wide text-slate-500">admins/não atribuídos</span>
+              </div>
+              <span className="text-xs text-slate-500">
+                {unassigned.length} {unassigned.length === 1 ? 'membro' : 'membros'}
+              </span>
+            </button>
+
+            {expanded['__unassigned__'] && (
+              <div className="border-t border-border/40">
+                <table className="w-full text-sm">
+                  {renderTableHeader()}
+                  <tbody>{unassigned.map(renderMemberRow)}</tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal de atribuir board */}
@@ -212,7 +402,7 @@ export default function MembersSettings() {
           <div className="glass w-full max-w-md rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Atribuir acesso a board</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Membro: <span className="font-medium text-slate-200">{members.find(m => m.id === assignBoardMemberId)?.display_name}</span>
+              Membro: <span className="font-medium text-slate-200">{assignedMember?.display_name}</span>
             </p>
 
             {/* Current board accesses */}

@@ -11,11 +11,15 @@ export async function GET(request: Request) {
 
     const result = await query(
       `SELECT ar.id, ar.type, ar.status, ar.request_data, ar.reviewer_note, ar.created_at, ar.reviewed_at,
-        m.display_name AS requester_name, m.email AS requester_email,
-        rm.display_name AS reviewer_name
+        m.display_name AS requester_name, m.email AS requester_email, m.avatar_url AS requester_avatar,
+        rm.display_name AS reviewer_name,
+        b.name AS board_name,
+        p.name AS project_name
       FROM approval_requests ar
       JOIN members m ON m.id = ar.requester_id
       LEFT JOIN members rm ON rm.id = ar.reviewer_id
+      LEFT JOIN boards b ON b.id = NULLIF(ar.request_data->>'board_id', '')::uuid
+      LEFT JOIN projects p ON p.id = NULLIF(ar.request_data->>'project_id', '')::uuid
       WHERE ar.workspace_id = $1 AND ar.status = $2
       ORDER BY ar.created_at DESC`,
       [wsId, status]

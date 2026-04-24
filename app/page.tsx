@@ -3,44 +3,50 @@ import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import ProjectFilter from '@/components/dashboard/ProjectFilter';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
 import { Columns3, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: { project_id?: string } }) {
+  const { project_id } = await searchParams;
+  const projectFilter = project_id ? `AND project_id = '${project_id}'` : '';
+  const projectFilterWhere = project_id ? `WHERE is_archived = false AND project_id = '${project_id}'` : `WHERE is_archived = false`;
+  const sprintFilter = project_id ? `AND project_id = '${project_id}'` : '';
+
   const [
     ticketStats, sprintRow, recentTickets,
     byStatus, byService, byPriority,
     weeklyCompleted, byAssignee, sprintBurndown,
-    byType
+    byType, projectsList
   ] = await Promise.all([
     query(`
       SELECT
-        COUNT(*) FILTER (WHERE is_archived = false) AS total_active,
-        COUNT(*) FILTER (WHERE is_done = true AND completed_at > NOW() - INTERVAL '30 days') AS completed_month,
-        COUNT(*) FILTER (WHERE is_archived = false AND status_name = 'AGUARDANDO') AS waiting,
-        COUNT(*) FILTER (WHERE is_archived = false AND priority = 'urgent') AS urgent
+        COUNT(*) FILTER (WHERE is_archived = false ${projectFilter}) AS total_active,
+        COUNT(*) FILTER (WHERE is_done = true AND completed_at > NOW() - INTERVAL '30 days' ${projectFilter}) AS completed_month,
+        COUNT(*) FILTER (WHERE is_archived = false AND status_name = 'AGUARDANDO' ${projectFilter}) AS waiting,
+        COUNT(*) FILTER (WHERE is_archived = false AND priority = 'urgent' ${projectFilter}) AS urgent
       FROM tickets_full
     `),
-    query(`SELECT id, name, start_date, end_date FROM sprints WHERE is_active = true LIMIT 1`),
+    query(`SELECT id, name, start_date, end_date FROM sprints WHERE is_active = true ${sprintFilter} LIMIT 1`),
     query(`
       SELECT ticket_key, id, title, status_name, status_color, priority, assignee_name, service_name
       FROM tickets_full
-      WHERE is_archived = false
+      ${projectFilterWhere}
       ORDER BY updated_at DESC
       LIMIT 8
     `),
     query(`
       SELECT status_name AS name, status_color AS color, COUNT(*)::int AS value
       FROM tickets_full
-      WHERE is_archived = false
+      ${projectFilterWhere}
       GROUP BY status_name, status_color
       ORDER BY value DESC
     `),
     query(`
       SELECT COALESCE(service_name, 'Sem serviço') AS name, COALESCE(service_color, '#6b7280') AS color, COUNT(*)::int AS value
       FROM tickets_full
-      WHERE is_archived = false
+      ${projectFilterWhere}
       GROUP BY service_name, service_color
       ORDER BY value DESC
     `),
@@ -62,7 +68,7 @@ export default async function HomePage() {
         END AS color,
         COUNT(*)::int AS value
       FROM tickets_full
-      WHERE is_archived = false
+      ${projectFilterWhere}
       GROUP BY priority
       ORDER BY value DESC
     `),
@@ -74,6 +80,7 @@ export default async function HomePage() {
       FROM tickets
       WHERE completed_at IS NOT NULL
         AND completed_at > NOW() - INTERVAL '8 weeks'
+        ${projectFilter}
       GROUP BY date_trunc('week', completed_at)
       ORDER BY date_trunc('week', completed_at) ASC
     `),
@@ -84,7 +91,7 @@ export default async function HomePage() {
         COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE is_done = true)::int AS done
       FROM tickets_full
-      WHERE is_archived = false
+      ${projectFilterWhere}
       GROUP BY assignee_name
       ORDER BY total DESC
       LIMIT 8
@@ -112,10 +119,11 @@ export default async function HomePage() {
         COUNT(*) FILTER (WHERE completed_at > NOW() - INTERVAL '30 days')::int AS last_30d,
         COUNT(*) FILTER (WHERE completed_at > NOW() - INTERVAL '7 days')::int AS last_7d
       FROM tickets_full
-      WHERE is_done = true AND is_archived = false
+      WHERE is_done = true AND is_archived = false ${projectFilter}
       GROUP BY type_name, type_color
       ORDER BY value DESC
-    `)
+    `),
+    query(`SELECT id, name, color FROM projects WHERE is_archived = false ORDER BY name ASC`)
   ]);
 
   const stats = ticketStats.rows[0] || { total_active: 0, completed_month: 0, waiting: 0, urgent: 0 };
@@ -138,9 +146,12 @@ export default async function HomePage() {
           <ApprovalGate>
           <div className="mx-auto max-w-[1200px] space-y-6">
             {/* Header */}
-            <div>
-              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-              <p className="mt-1 text-sm text-slate-500">Visão geral do workspace Bah!Company</p>
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+                <p className="mt-1 text-sm text-slate-500">Visão geral do workspace Bah!Company</p>
+              </div>
+              <ProjectFilter projects={projectsList.rows as any[]} />
             </div>
 
             {/* Stat Cards - Premium */}

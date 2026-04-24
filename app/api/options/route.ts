@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { getAuthMember } from '@/lib/api-auth';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
+
+    // Sensitive types require admin
+    const adminOnlyTypes = ['members'];
+    if (type && adminOnlyTypes.includes(type)) {
+      if (!auth || !isAdmin(auth.role)) {
+        return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+      }
+    }
 
     const queries: Record<string, string> = {
       statuses: `SELECT id, name, color FROM statuses ORDER BY position ASC`,
