@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { getAuthMember } from '@/lib/api-auth';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth || !isAdmin(auth.role)) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '7'; // dias
 

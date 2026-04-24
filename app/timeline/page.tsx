@@ -5,8 +5,35 @@ import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import TimelineView from '@/components/timeline/TimelineView';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 
-export default async function TimelinePage() {
+export default async function TimelinePage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
+  const { board_id, project_id } = await searchParams;
   const wsId = await getDefaultWorkspaceId();
+
+  // Resolve project_id from board_id if needed
+  let resolvedProjectId = project_id;
+  if (board_id && !resolvedProjectId) {
+    const boardRes = await query(`SELECT project_id FROM boards WHERE id = $1`, [board_id]);
+    resolvedProjectId = boardRes.rows[0]?.project_id;
+  }
+
+  // Build ticket query
+  let ticketWhere = 'WHERE is_archived = false AND (due_date IS NOT NULL OR sprint_id IS NOT NULL)';
+  const ticketParams: string[] = [];
+  if (board_id) {
+    ticketParams.push(board_id);
+    ticketWhere = `WHERE is_archived = false AND board_id = $${ticketParams.length} AND (due_date IS NOT NULL OR sprint_id IS NOT NULL)`;
+  } else if (resolvedProjectId) {
+    ticketParams.push(resolvedProjectId);
+    ticketWhere = `WHERE is_archived = false AND project_id = $${ticketParams.length} AND (due_date IS NOT NULL OR sprint_id IS NOT NULL)`;
+  }
+
+  // Build sprint query
+  let sprintWhere = 'workspace_id = $1';
+  const sprintParams: string[] = [wsId];
+  if (resolvedProjectId) {
+    sprintParams.push(resolvedProjectId);
+    sprintWhere = `workspace_id = $1 AND project_id = $2`;
+  }
 
   const [ticketsResult, sprintsResult] = await Promise.all([
     query(`
@@ -20,16 +47,15 @@ export default async function TimelinePage() {
         created_at::text,
         completed_at::text
       FROM tickets_full
-      WHERE is_archived = false
-        AND (due_date IS NOT NULL OR sprint_id IS NOT NULL)
+      ${ticketWhere}
       ORDER BY due_date ASC NULLS LAST, created_at ASC
-    `),
+    `, ticketParams.length > 0 ? ticketParams : undefined),
     query(
       `SELECT id, name, start_date::text, end_date::text, is_active, is_completed
        FROM sprints
-       WHERE workspace_id = $1
+       WHERE ${sprintWhere}
        ORDER BY start_date ASC NULLS LAST, created_at ASC`,
-      [wsId]
+      sprintParams
     ),
   ]);
 
