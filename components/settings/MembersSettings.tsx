@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Trash2, Link2, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import { useConfirm } from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/Toast';
 
 interface Member {
   id: string;
@@ -30,6 +32,8 @@ interface GroupedResponse {
 }
 
 export default function MembersSettings() {
+  const { confirm } = useConfirm();
+  const { toast } = useToast();
   const [groups, setGroups] = useState<ProjectGroup[]>([]);
   const [unassigned, setUnassigned] = useState<Member[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -189,10 +193,21 @@ export default function MembersSettings() {
   }
 
   async function handleDeleteMember(id: string) {
-    if (!confirm('Remover este membro? Esta ação não pode ser desfeita.')) return;
+    const member = findMemberById(id);
+    const ok = await confirm({
+      title: 'Remover membro',
+      message: `Tem certeza que deseja remover ${member?.display_name || 'este membro'}? Todos os tickets e comentários deste usuário serão preservados mas desvinculados.`,
+      confirmText: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     const res = await fetch(`/api/settings?table=members&id=${id}`, { method: 'DELETE' });
     if (res.ok) {
       removeMemberEverywhere(id);
+      toast('Membro removido', 'success');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast(err.error || 'Erro ao remover membro. Pode ter tickets vinculados.', 'error');
     }
   }
 

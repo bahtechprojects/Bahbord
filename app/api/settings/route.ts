@@ -142,9 +142,24 @@ export async function DELETE(request: Request) {
     const table = searchParams.get('table');
     const id = searchParams.get('id');
 
-    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'clients'];
+    const allowedTables = ['statuses', 'services', 'categories', 'ticket_types', 'quick_reactions', 'clients', 'members'];
     if (!table || !id || !allowedTables.includes(table)) {
       return NextResponse.json({ error: 'table e id obrigatórios' }, { status: 400 });
+    }
+
+    // Prevent removing the last admin/owner
+    if (table === 'members') {
+      const roleCheck = await query(
+        `SELECT COUNT(*) AS cnt FROM org_roles WHERE role IN ('owner', 'admin')`
+      );
+      const currentCount = parseInt(roleCheck.rows[0].cnt);
+      const memberRole = await query(
+        `SELECT role FROM org_roles WHERE member_id = $1`, [id]
+      );
+      const isTargetAdmin = memberRole.rows[0] && ['owner', 'admin'].includes(memberRole.rows[0].role);
+      if (isTargetAdmin && currentCount <= 1) {
+        return NextResponse.json({ error: 'Não é possível remover o último admin da organização' }, { status: 409 });
+      }
     }
 
     // Verificar se tem tickets associados (para statuses e services)
