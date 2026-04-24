@@ -187,6 +187,35 @@ export async function PATCH(request: Request) {
         [approval.workspace_id, approval.requester_id, targetRole]
       );
       await query(`UPDATE members SET is_approved = true WHERE id = $1`, [approval.requester_id]);
+
+      // Também dar acesso a um board específico se informado
+      if (board_id) {
+        await query(
+          `INSERT INTO board_roles (board_id, member_id, role)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (board_id, member_id) DO UPDATE SET role = $3`,
+          [board_id, approval.requester_id, targetRole]
+        );
+        // Dar acesso viewer ao projeto do board
+        const boardProject = await query(`SELECT project_id FROM boards WHERE id = $1`, [board_id]);
+        if (boardProject.rows[0]) {
+          await query(
+            `INSERT INTO project_roles (project_id, member_id, role)
+             VALUES ($1, $2, 'viewer')
+             ON CONFLICT (project_id, member_id) DO NOTHING`,
+            [boardProject.rows[0].project_id, approval.requester_id]
+          );
+        }
+      }
+      // Ou acesso a um projeto inteiro
+      else if (project_id) {
+        await query(
+          `INSERT INTO project_roles (project_id, member_id, role)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (project_id, member_id) DO UPDATE SET role = $3`,
+          [project_id, approval.requester_id, targetRole]
+        );
+      }
     }
 
     return NextResponse.json(result.rows[0]);
