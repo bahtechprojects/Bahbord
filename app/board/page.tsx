@@ -127,9 +127,12 @@ export default async function BoardPage({ searchParams }: { searchParams: { boar
     if (s.wip_limit) wipLimits[key] = s.wip_limit;
   }
 
+  // Hide project filter when already filtering by board/project
+  const projectsToShow = (board_id || project_id) ? [] : projectRows.rows;
+
   return (
     <BoardShell services={serviceRows.rows} statuses={statusRows.rows} ticketTypes={typeRows.rows}>
-      <KanbanBoard initialItems={initialItems} wipLimits={wipLimits} availableProjects={projectRows.rows} />
+      <KanbanBoard initialItems={initialItems} wipLimits={wipLimits} availableProjects={projectsToShow} />
     </BoardShell>
   );
 }
