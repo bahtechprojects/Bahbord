@@ -166,7 +166,6 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
       event.preventDefault();
       setError('');
       if (!title.trim()) { setError('O resumo do ticket é obrigatório.'); return; }
-      if (!serviceId) { setError('BAH! Serviço/Produto é necessário.'); return; }
 
       setIsSubmitting(true);
       try {
@@ -176,7 +175,7 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
           body: JSON.stringify({
             ticket_type_id: ticketTypeId,
             status_id: statusId,
-            service_id: serviceId,
+            service_id: serviceId || null,
             assignee_id: assigneeId || null,
             reporter_id: reporterId || null,
             title: title.trim(),
