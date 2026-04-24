@@ -296,19 +296,21 @@ export default function SprintsView() {
         <div className="rounded-lg border border-accent/30 bg-surface2 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-white">Criar sprint</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-[10px] font-medium text-slate-500">Projeto <span className="text-red-400">*</span></label>
-              <select
-                value={newProjectId}
-                onChange={(e) => setNewProjectId(e.target.value)}
-                className="w-full rounded border border-border/40 bg-surface px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-accent/60"
-              >
-                <option value="">Selecione um projeto</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
+            {!currentProjectId && (
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-[10px] font-medium text-slate-500">Projeto <span className="text-red-400">*</span></label>
+                <select
+                  value={newProjectId}
+                  onChange={(e) => setNewProjectId(e.target.value)}
+                  className="w-full rounded border border-border/40 bg-surface px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-accent/60"
+                >
+                  <option value="">Selecione um projeto</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-[10px] font-medium text-slate-500">Nome <span className="text-red-400">*</span></label>
               <input
