@@ -6,13 +6,13 @@ interface SkeletonProps {
 
 export function Skeleton({ className }: SkeletonProps) {
   return (
-    <div className={cn('animate-pulse rounded bg-border/30', className)} />
+    <div className={cn('animate-pulse rounded bg-[var(--overlay-hover)]', className)} />
   );
 }
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-lg border border-border/40 bg-surface2 p-3 space-y-2.5">
+    <div className="card-premium p-3 space-y-2.5">
       <div className="flex items-center gap-2">
         <Skeleton className="h-2 w-2 rounded-full" />
         <Skeleton className="h-3 w-16" />

@@ -6,6 +6,7 @@ import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import ProjectFilter from '@/components/dashboard/ProjectFilter';
 import Sparkline from '@/components/dashboard/Sparkline';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
 
@@ -276,29 +277,51 @@ export default async function HomePage({ searchParams }: { searchParams: { proje
               byAssignee={byAssignee.rows as any[]}
             />
 
-            {/* Recent tickets */}
-            <div className="card-premium overflow-hidden">
-              <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-3">
-                <h2 className="text-[13px] font-medium text-primary">Tickets recentes</h2>
-                <Link href={(tabsBoardId ? `/board?board_id=${tabsBoardId}` : '/board') as any} className="btn-premium btn-secondary text-[12px] py-1 px-2.5">
-                  Ver board
-                </Link>
-              </div>
-              <div className="divide-y divide-border/20">
-                {(recentTickets.rows as any[]).map((t) => (
+            {/* Recent tickets + Activity feed - grid 2/3 + 1/3 */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Tickets recentes */}
+              <div className="card-premium overflow-hidden lg:col-span-2">
+                <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-3">
+                  <h2 className="text-[13px] font-medium text-primary">Tickets recentes</h2>
                   <Link
-                    key={t.ticket_key}
-                    href={`/ticket/${t.id}` as any}
-                    className="flex items-center gap-3 px-5 py-3 transition hover:bg-[var(--overlay-hover)]"
+                    href={(tabsBoardId ? `/board?board_id=${tabsBoardId}` : '/board') as any}
+                    className="btn-premium btn-ghost text-[12px] py-1 px-2"
                   >
-                    <span className="w-20 shrink-0 font-mono text-[11px] font-bold text-slate-400">{t.ticket_key}</span>
-                    <span className="flex-1 truncate text-[13px] font-medium text-slate-300">{t.title}</span>
-                    <span className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: t.status_color + '15', color: t.status_color }}>
-                      {t.status_name}
-                    </span>
-                    <span className="hidden w-28 shrink-0 truncate text-right text-[11px] text-slate-500 sm:inline">{t.assignee_name || '-'}</span>
+                    Ver todos →
                   </Link>
-                ))}
+                </div>
+                <div>
+                  {(recentTickets.rows as any[]).map((t) => (
+                    <Link
+                      key={t.ticket_key}
+                      href={`/ticket/${t.id}` as any}
+                      className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-3 border-b border-[var(--card-border)] px-4 py-2.5 last:border-0 transition hover:bg-[var(--overlay-subtle)]"
+                    >
+                      <span className="font-mono text-[11px] font-bold tabular-nums text-secondary">{t.ticket_key}</span>
+                      <span className="truncate text-[13px] text-primary">{t.title}</span>
+                      <span
+                        className="shrink-0 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium"
+                        style={{ backgroundColor: t.status_color + '20', color: t.status_color }}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.status_color }} />
+                        {t.status_name}
+                      </span>
+                      <span className="hidden w-24 shrink-0 truncate text-right text-[11px] text-[var(--text-tertiary)] sm:inline">
+                        {t.assignee_name || '—'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Activity feed */}
+              <div className="card-premium overflow-hidden">
+                <div className="border-b border-[var(--card-border)] px-4 py-3">
+                  <h2 className="text-[13px] font-medium text-primary">Atividade recente</h2>
+                </div>
+                <div className="px-4 py-3">
+                  <ActivityFeed projectId={safeProjectId} limit={10} />
+                </div>
               </div>
             </div>
           </div>

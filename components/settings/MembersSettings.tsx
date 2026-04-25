@@ -268,8 +268,31 @@ export default function MembersSettings() {
 
   if (loading) {
     return (
-      <div className="flex h-32 items-center justify-center">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+      <div className="space-y-3">
+        <div className="card-premium overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-[var(--overlay-hover)] animate-pulse" />
+              <div className="h-3 w-32 rounded bg-[var(--overlay-hover)] animate-pulse" />
+            </div>
+            <div className="h-3 w-16 rounded bg-[var(--overlay-hover)] animate-pulse" />
+          </div>
+          <div className="border-t border-[var(--card-border)]">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-3 last:border-0">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-[var(--overlay-hover)] animate-pulse" />
+                  <div className="h-3 w-24 rounded bg-[var(--overlay-hover)] animate-pulse" />
+                </div>
+                <div className="h-3 w-3/4 rounded bg-[var(--overlay-hover)] animate-pulse" />
+                <div className="h-7 rounded bg-[var(--overlay-subtle)] animate-pulse" />
+                <div className="h-5 w-2/3 rounded bg-[var(--overlay-subtle)] animate-pulse" />
+                <div className="h-3 w-16 rounded bg-[var(--overlay-subtle)] animate-pulse" />
+                <div />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
