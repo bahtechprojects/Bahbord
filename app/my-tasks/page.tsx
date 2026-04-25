@@ -11,27 +11,35 @@ export default async function MyTasksPage() {
   const memberId = auth?.id;
 
   let tickets: any[] = [];
+  let queryError: string | null = null;
   if (memberId) {
-    const result = await query(
-      `SELECT
-        t.id, t.ticket_key, t.title, t.priority,
-        t.status_name, t.status_color,
-        t.type_name, t.type_icon, t.type_color,
-        t.assignee_name, t.due_date, t.completed_at,
-        t.project_id, t.project_name, t.project_color, t.project_prefix,
-        t.updated_at
-       FROM tickets_full t
-       WHERE t.assignee_id = $1
-         AND t.is_archived = false
-         AND t.is_done = false
-       ORDER BY
-         CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
-         t.due_date ASC NULLS LAST,
-         t.updated_at DESC
-       LIMIT 100`,
-      [memberId]
-    );
-    tickets = result.rows;
+    try {
+      const result = await query(
+        `SELECT
+          t.id, t.ticket_key, t.title, t.priority,
+          t.status_name, t.status_color,
+          t.type_name, t.type_icon, t.type_color,
+          t.assignee_name, t.due_date, t.completed_at,
+          t.project_id, t.project_name, t.project_prefix,
+          p.color AS project_color,
+          t.updated_at
+         FROM tickets_full t
+         LEFT JOIN projects p ON p.id = t.project_id
+         WHERE t.assignee_id = $1
+           AND t.is_archived = false
+           AND t.is_done = false
+         ORDER BY
+           CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+           t.due_date ASC NULLS LAST,
+           t.updated_at DESC
+         LIMIT 100`,
+        [memberId]
+      );
+      tickets = result.rows;
+    } catch (err) {
+      queryError = err instanceof Error ? err.message : 'Erro desconhecido';
+      console.error('my-tasks query error:', err);
+    }
   }
 
   return (
@@ -54,7 +62,17 @@ export default async function MyTasksPage() {
                 </p>
               </div>
 
-              <PersonalTicketList tickets={tickets} emptyMessage="Você está em dia. Nenhum ticket atribuído." />
+              {queryError ? (
+                <div className="card-premium border-red-500/30 bg-red-500/5 p-4">
+                  <p className="text-[13px] font-medium text-red-400">Não consegui carregar suas tarefas</p>
+                  <p className="mt-1 text-[12px] text-red-300/80 font-mono">{queryError}</p>
+                  <p className="mt-2 text-[11px] text-secondary">
+                    Provavelmente uma migration está faltando. Rode o SQL em <code className="font-mono">db/036_view_project_color.sql</code> no banco.
+                  </p>
+                </div>
+              ) : (
+                <PersonalTicketList tickets={tickets} emptyMessage="Você está em dia. Nenhum ticket atribuído." />
+              )}
             </div>
           </ApprovalGate>
         </main>
