@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { UserPlus, Trash2, RefreshCw, X, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { UserPlus, Trash2, RefreshCw, X, ChevronDown, ChevronRight, FolderOpen, UserMinus } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { useToast } from '@/components/ui/Toast';
@@ -45,7 +45,7 @@ export default function MembersSettings() {
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [filter, setFilter] = useState('');
-  const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadAll() {
@@ -60,13 +60,10 @@ export default function MembersSettings() {
       } else {
         const err = await mRes.json().catch(() => ({}));
         setLoadError(`${mRes.status}: ${err.error || mRes.statusText}`);
-        console.error('GET /api/members/with-projects falhou:', mRes.status, err);
       }
       if (pRes.ok) setProjects(await pRes.json());
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro de rede';
-      setLoadError(msg);
-      console.error('Erro ao carregar:', err);
+      setLoadError(err instanceof Error ? err.message : 'Erro de rede');
     } finally {
       setLoading(false);
     }
@@ -75,6 +72,19 @@ export default function MembersSettings() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  // Inicializa expanded: primeiro projeto aberto
+  useEffect(() => {
+    if (projects.length > 0 && Object.keys(expanded).length === 0) {
+      const init: Record<string, boolean> = {};
+      projects.forEach((p, i) => {
+        init[p.id] = i === 0;
+      });
+      init['__unassigned__'] = false;
+      init['__pending__'] = true;
+      setExpanded(init);
+    }
+  }, [projects, expanded]);
 
   async function handleSyncClerk(autoApprove: boolean) {
     setSyncing(true);
@@ -227,21 +237,214 @@ export default function MembersSettings() {
     }
   }
 
-  const filtered = members.filter((m) => {
-    if (showOnlyPending && m.is_approved) return false;
-    if (filter) {
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  // Grouping: members per project + unassigned + pending
+  const groups = useMemo(() => {
+    const filtered = members.filter((m) => {
+      if (!filter) return true;
       const q = filter.toLowerCase();
       return m.display_name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q);
-    }
-    return true;
-  });
+    });
 
-  const pendingCount = members.filter((m) => !m.is_approved).length;
+    // Pending approval bucket
+    const pending = filtered.filter((m) => !m.is_approved);
+
+    // Project buckets
+    const projectGroups = projects.map((p) => ({
+      key: p.id,
+      label: p.name,
+      color: p.color,
+      members: filtered.filter((m) => m.is_approved && m.projects.find((pj) => pj.project_id === p.id)),
+    }));
+
+    // Unassigned bucket: aprovados sem nenhum projeto
+    const unassigned = filtered.filter((m) => m.is_approved && m.projects.length === 0);
+
+    return { pending, projectGroups, unassigned };
+  }, [members, projects, filter]);
 
   if (loading) {
     return (
       <div className="flex h-32 items-center justify-center">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+      </div>
+    );
+  }
+
+  function renderMemberRow(m: Member, options: { showProjectsColumn?: boolean; sectionProjectId?: string } = {}) {
+    const { showProjectsColumn = true, sectionProjectId } = options;
+    return (
+      <div
+        key={`${sectionProjectId || 'flat'}-${m.id}`}
+        className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-2.5 last:border-0 hover:bg-[var(--overlay-subtle)]"
+      >
+        {/* Membro + status */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Avatar name={m.display_name} imageUrl={m.avatar_url} size="sm" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[13px] text-primary font-medium truncate">{m.display_name || '—'}</span>
+              {!m.is_approved && (
+                <button
+                  onClick={() => handleApprove(m.id)}
+                  className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-400 hover:bg-amber-500/25 shrink-0"
+                  title="Clique para aprovar"
+                >
+                  Pendente
+                </button>
+              )}
+              {m.is_client && (
+                <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-400 shrink-0">
+                  Cliente
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Email */}
+        <div className="text-[12.5px] text-secondary truncate">{m.email || '—'}</div>
+
+        {/* Role */}
+        <div>
+          <select
+            value={m.role}
+            onChange={(e) => handleRoleChange(m.id, e.target.value)}
+            className="input-premium !py-1 !px-2 text-[12px] w-full"
+          >
+            <option value="owner">Owner</option>
+            <option value="admin">Admin</option>
+            <option value="member">Membro</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+
+        {/* Projetos coluna */}
+        <div className="flex flex-wrap items-center gap-1 min-w-0">
+          {showProjectsColumn ? (
+            <>
+              {m.projects.map((pj) => (
+                <span
+                  key={pj.project_id}
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium"
+                  style={{
+                    backgroundColor: (pj.project_color || '#3b6cf5') + '20',
+                    color: pj.project_color || '#3b6cf5',
+                  }}
+                >
+                  {pj.project_name}
+                  <button
+                    onClick={() => handleRemoveProject(m.id, pj.project_id)}
+                    className="opacity-60 hover:opacity-100"
+                    aria-label={`Remover ${pj.project_name}`}
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+              <select
+                value=""
+                onChange={(e) => handleAddProject(m.id, e.target.value)}
+                className="input-premium !py-0.5 !px-1.5 text-[11px] text-secondary"
+              >
+                <option value="">+ projeto</option>
+                {projects
+                  .filter((p) => !m.projects.find((pj) => pj.project_id === p.id))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </>
+          ) : (
+            sectionProjectId && (
+              <button
+                onClick={() => handleRemoveProject(m.id, sectionProjectId)}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-secondary hover:text-[var(--danger)] hover:bg-[var(--danger)]/10"
+                title="Remover deste projeto"
+              >
+                <UserMinus size={11} /> Remover
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Telefone */}
+        <div>
+          {editingPhoneId === m.id ? (
+            <input
+              autoFocus
+              value={phoneValue}
+              onChange={(e) => setPhoneValue(e.target.value)}
+              onBlur={() => handlePhoneSave(m.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handlePhoneSave(m.id);
+                if (e.key === 'Escape') setEditingPhoneId(null);
+              }}
+              className="input-premium !py-1 !px-2 text-[12px] w-full"
+              placeholder="(00) 00000-0000"
+            />
+          ) : (
+            <button
+              onClick={() => {
+                setEditingPhoneId(m.id);
+                setPhoneValue(m.phone || '');
+              }}
+              className="text-[12px] text-secondary hover:text-primary"
+            >
+              {m.phone || '—'}
+            </button>
+          )}
+        </div>
+
+        {/* Delete */}
+        <div className="text-right">
+          <button
+            onClick={() => handleDeleteMember(m.id, m.display_name)}
+            className="text-[var(--text-tertiary)] transition hover:text-[var(--danger)] p-1"
+            title="Remover membro"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSectionHeader(label: string, count: number, expanded: boolean, color?: string | null) {
+    return (
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          {expanded ? (
+            <ChevronDown size={13} className="text-secondary" />
+          ) : (
+            <ChevronRight size={13} className="text-secondary" />
+          )}
+          {color !== undefined && (
+            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color || '#71717a' }} />
+          )}
+          <span className="text-[13px] font-semibold text-primary">{label}</span>
+        </div>
+        <span className="text-[11px] text-secondary tabular-nums">
+          {count} {count === 1 ? 'membro' : 'membros'}
+        </span>
+      </div>
+    );
+  }
+
+  function renderColumnHeaders() {
+    return (
+      <div className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] bg-[var(--overlay-subtle)] px-4 py-2 text-[10px] uppercase tracking-wider text-secondary font-medium">
+        <span>Membro</span>
+        <span>Email</span>
+        <span>Role</span>
+        <span>Projetos</span>
+        <span>Telefone</span>
+        <span></span>
       </div>
     );
   }
@@ -253,7 +456,7 @@ export default function MembersSettings() {
         <div>
           <h2 className="text-[15px] font-semibold text-primary">Membros</h2>
           <p className="text-[12px] text-secondary mt-0.5">
-            {members.length} no total{pendingCount > 0 && ` · ${pendingCount} aguardando aprovação`}
+            {members.length} no total{groups.pending.length > 0 && ` · ${groups.pending.length} aguardando aprovação`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -280,28 +483,23 @@ export default function MembersSettings() {
         </div>
       </div>
 
+      {/* Erro de carregamento */}
+      {loadError && (
+        <div className="card-premium border-red-500/30 bg-red-500/5 p-4">
+          <p className="text-[13px] font-medium text-red-400">Não consegui carregar os membros</p>
+          <p className="mt-1 text-[12px] text-red-300/80 font-mono">{loadError}</p>
+        </div>
+      )}
+
       {/* Invite form */}
       {showInvite && (
         <div className="card-premium p-4 space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input
-              value={inviteName}
-              onChange={(e) => setInviteName(e.target.value)}
-              placeholder="Nome"
-              className="input-premium"
-            />
-            <input
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="Email"
-              type="email"
-              className="input-premium"
-            />
+            <input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Nome" className="input-premium" />
+            <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Email" type="email" className="input-premium" />
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowInvite(false)} className="btn-premium btn-secondary">
-              Cancelar
-            </button>
+            <button onClick={() => setShowInvite(false)} className="btn-premium btn-secondary">Cancelar</button>
             <button
               onClick={handleInvite}
               disabled={!inviteName.trim() || !inviteEmail.trim()}
@@ -313,178 +511,111 @@ export default function MembersSettings() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Buscar nome ou email…"
-          className="input-premium flex-1 min-w-[180px]"
-        />
-        <button
-          onClick={() => setShowOnlyPending((v) => !v)}
-          className={`btn-premium btn-secondary text-[12px] ${
-            showOnlyPending ? '!border-amber-500/60 !text-amber-400' : ''
-          }`}
-        >
-          {showOnlyPending ? 'Mostrando pendentes' : 'Só pendentes'}
-        </button>
-      </div>
+      {/* Filtro */}
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Buscar nome ou email…"
+        className="input-premium w-full"
+      />
 
-      {/* Erro de carregamento */}
-      {loadError && (
-        <div className="card-premium border-red-500/30 bg-red-500/5 p-4">
-          <p className="text-[13px] font-medium text-red-400">Não consegui carregar os membros</p>
-          <p className="mt-1 text-[12px] text-red-300/80 font-mono">{loadError}</p>
-          <p className="mt-2 text-[11px] text-secondary">
-            Provavelmente uma migration está faltando. Veja o console do servidor pro stack trace.
-          </p>
-        </div>
-      )}
-
-      {/* List */}
-      {filtered.length === 0 ? (
+      {members.length === 0 && !loadError && (
         <div className="card-premium p-6 text-center text-[13px] text-secondary">
-          {loadError ? 'Carregamento falhou (veja erro acima)' : 'Nenhum membro encontrado.'}
-        </div>
-      ) : (
-        <div className="card-premium overflow-hidden">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--card-border)] text-left text-[11px] uppercase tracking-wider text-secondary">
-                <th className="px-3 py-2.5 font-medium">Membro</th>
-                <th className="px-3 py-2.5 font-medium">Email</th>
-                <th className="px-3 py-2.5 font-medium">Role</th>
-                <th className="px-3 py-2.5 font-medium">Projetos</th>
-                <th className="px-3 py-2.5 font-medium">Telefone</th>
-                <th className="px-3 py-2.5 font-medium w-12"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((m) => (
-                <tr key={m.id} className="border-b border-[var(--card-border)] last:border-0 align-middle hover:bg-[var(--overlay-subtle)]">
-                  {/* Nome + status */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={m.display_name} imageUrl={m.avatar_url} size="sm" />
-                      <span className="text-primary font-medium">{m.display_name || '—'}</span>
-                      {!m.is_approved && (
-                        <button
-                          onClick={() => handleApprove(m.id)}
-                          className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-400 hover:bg-amber-500/25"
-                          title="Clique para aprovar"
-                        >
-                          Pendente
-                        </button>
-                      )}
-                      {m.is_client && (
-                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-400">
-                          Cliente
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Email */}
-                  <td className="px-3 py-2.5 text-secondary truncate max-w-[200px]">{m.email || '—'}</td>
-
-                  {/* Role */}
-                  <td className="px-3 py-2.5">
-                    <select
-                      value={m.role}
-                      onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                      className="input-premium !py-1 !px-2 text-[12px]"
-                    >
-                      <option value="owner">Owner</option>
-                      <option value="admin">Admin</option>
-                      <option value="member">Membro</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                  </td>
-
-                  {/* Projetos atribuídos + dropdown pra adicionar */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {m.projects.map((pj) => (
-                        <span
-                          key={pj.project_id}
-                          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium"
-                          style={{
-                            backgroundColor: (pj.project_color || '#3b6cf5') + '20',
-                            color: pj.project_color || '#3b6cf5',
-                          }}
-                        >
-                          {pj.project_name}
-                          <button
-                            onClick={() => handleRemoveProject(m.id, pj.project_id)}
-                            className="opacity-60 hover:opacity-100"
-                            aria-label={`Remover ${pj.project_name}`}
-                          >
-                            <X size={10} />
-                          </button>
-                        </span>
-                      ))}
-                      <select
-                        value=""
-                        onChange={(e) => handleAddProject(m.id, e.target.value)}
-                        className="input-premium !py-0.5 !px-1.5 text-[11px] text-secondary"
-                      >
-                        <option value="">+ projeto</option>
-                        {projects
-                          .filter((p) => !m.projects.find((pj) => pj.project_id === p.id))
-                          .map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  </td>
-
-                  {/* Telefone */}
-                  <td className="px-3 py-2.5">
-                    {editingPhoneId === m.id ? (
-                      <input
-                        autoFocus
-                        value={phoneValue}
-                        onChange={(e) => setPhoneValue(e.target.value)}
-                        onBlur={() => handlePhoneSave(m.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handlePhoneSave(m.id);
-                          if (e.key === 'Escape') setEditingPhoneId(null);
-                        }}
-                        className="input-premium !py-1 !px-2 text-[12px] w-[130px]"
-                        placeholder="(00) 00000-0000"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setEditingPhoneId(m.id);
-                          setPhoneValue(m.phone || '');
-                        }}
-                        className="text-[12px] text-secondary hover:text-primary"
-                      >
-                        {m.phone || '—'}
-                      </button>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-3 py-2.5 text-right">
-                    <button
-                      onClick={() => handleDeleteMember(m.id, m.display_name)}
-                      className="text-[var(--text-tertiary)] transition hover:text-[var(--danger)]"
-                      title="Remover membro"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          Nenhum membro encontrado. Clique em &quot;Sincronizar Clerk&quot; pra puxar os usuários.
         </div>
       )}
+
+      <div className="space-y-3">
+        {/* Pending bucket */}
+        {groups.pending.length > 0 && (
+          <div className="card-premium overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleExpanded('__pending__')}
+              className="w-full text-left transition hover:bg-[var(--overlay-subtle)]"
+            >
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  {expanded['__pending__'] ? (
+                    <ChevronDown size={13} className="text-secondary" />
+                  ) : (
+                    <ChevronRight size={13} className="text-secondary" />
+                  )}
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shrink-0" />
+                  <span className="text-[13px] font-semibold text-primary">Aguardando aprovação</span>
+                </div>
+                <span className="text-[11px] text-secondary tabular-nums">
+                  {groups.pending.length} {groups.pending.length === 1 ? 'membro' : 'membros'}
+                </span>
+              </div>
+            </button>
+            {expanded['__pending__'] && (
+              <div>
+                {renderColumnHeaders()}
+                <div>{groups.pending.map((m) => renderMemberRow(m, { showProjectsColumn: true }))}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Per-project buckets */}
+        {groups.projectGroups.map((g) => (
+          <div key={g.key} className="card-premium overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleExpanded(g.key)}
+              className="w-full text-left transition hover:bg-[var(--overlay-subtle)]"
+            >
+              {renderSectionHeader(g.label, g.members.length, !!expanded[g.key], g.color)}
+            </button>
+            {expanded[g.key] && (
+              <div>
+                {renderColumnHeaders()}
+                {g.members.length === 0 ? (
+                  <div className="px-4 py-4 text-[12px] text-secondary">Nenhum membro neste projeto.</div>
+                ) : (
+                  <div>
+                    {g.members.map((m) => renderMemberRow(m, { showProjectsColumn: false, sectionProjectId: g.key }))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Sem projeto */}
+        {groups.unassigned.length > 0 && (
+          <div className="card-premium overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleExpanded('__unassigned__')}
+              className="w-full text-left transition hover:bg-[var(--overlay-subtle)]"
+            >
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  {expanded['__unassigned__'] ? (
+                    <ChevronDown size={13} className="text-secondary" />
+                  ) : (
+                    <ChevronRight size={13} className="text-secondary" />
+                  )}
+                  <FolderOpen size={13} className="text-secondary" />
+                  <span className="text-[13px] font-semibold text-primary">Sem projeto</span>
+                  <span className="text-[10px] uppercase tracking-wider text-secondary">admins / não atribuídos</span>
+                </div>
+                <span className="text-[11px] text-secondary tabular-nums">
+                  {groups.unassigned.length} {groups.unassigned.length === 1 ? 'membro' : 'membros'}
+                </span>
+              </div>
+            </button>
+            {expanded['__unassigned__'] && (
+              <div>
+                {renderColumnHeaders()}
+                <div>{groups.unassigned.map((m) => renderMemberRow(m, { showProjectsColumn: true }))}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
