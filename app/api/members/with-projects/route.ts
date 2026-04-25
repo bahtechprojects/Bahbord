@@ -9,15 +9,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const result = await query(`
+    // Detect optional columns to be defensive against missing migrations
+    const colCheck = await query<{ column_name: string }>(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_name = 'members' AND column_name IN ('is_client', 'is_approved', 'phone', 'avatar_url')`
+    );
+    const cols = new Set(colCheck.rows.map((r) => r.column_name));
+    const isClientExpr = cols.has('is_client') ? 'COALESCE(m.is_client, false)' : 'false';
+    const isApprovedExpr = cols.has('is_approved') ? 'COALESCE(m.is_approved, false)' : 'true';
+    const phoneExpr = cols.has('phone') ? 'm.phone' : 'NULL';
+    const avatarExpr = cols.has('avatar_url') ? 'm.avatar_url' : 'NULL';
+
+    const sql = `
       SELECT
         m.id,
         m.display_name,
         m.email,
-        m.phone,
-        m.avatar_url,
-        m.is_approved,
-        COALESCE(m.is_client, false) AS is_client,
+        ${phoneExpr} AS phone,
+        ${avatarExpr} AS avatar_url,
+        ${isApprovedExpr} AS is_approved,
+        ${isClientExpr} AS is_client,
         COALESCE(orr.role, m.role, 'member') AS role,
         COALESCE(
           (
@@ -36,12 +47,14 @@ export async function GET() {
         ) AS projects
       FROM members m
       LEFT JOIN org_roles orr ON orr.member_id = m.id
-      ORDER BY m.is_approved DESC, m.display_name ASC
-    `);
+      ORDER BY ${isApprovedExpr} DESC, m.display_name ASC NULLS LAST
+    `;
 
+    const result = await query(sql);
     return NextResponse.json(result.rows);
   } catch (err) {
     console.error('GET /api/members/with-projects error:', err);
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Erro interno';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

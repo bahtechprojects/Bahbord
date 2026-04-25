@@ -46,16 +46,26 @@ export default function MembersSettings() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [filter, setFilter] = useState('');
   const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadAll() {
+    setLoadError(null);
     try {
       const [mRes, pRes] = await Promise.all([
         fetch('/api/members/with-projects'),
         fetch('/api/options?type=projects'),
       ]);
-      if (mRes.ok) setMembers(await mRes.json());
+      if (mRes.ok) {
+        setMembers(await mRes.json());
+      } else {
+        const err = await mRes.json().catch(() => ({}));
+        setLoadError(`${mRes.status}: ${err.error || mRes.statusText}`);
+        console.error('GET /api/members/with-projects falhou:', mRes.status, err);
+      }
       if (pRes.ok) setProjects(await pRes.json());
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro de rede';
+      setLoadError(msg);
       console.error('Erro ao carregar:', err);
     } finally {
       setLoading(false);
@@ -321,10 +331,21 @@ export default function MembersSettings() {
         </button>
       </div>
 
+      {/* Erro de carregamento */}
+      {loadError && (
+        <div className="card-premium border-red-500/30 bg-red-500/5 p-4">
+          <p className="text-[13px] font-medium text-red-400">Não consegui carregar os membros</p>
+          <p className="mt-1 text-[12px] text-red-300/80 font-mono">{loadError}</p>
+          <p className="mt-2 text-[11px] text-secondary">
+            Provavelmente uma migration está faltando. Veja o console do servidor pro stack trace.
+          </p>
+        </div>
+      )}
+
       {/* List */}
       {filtered.length === 0 ? (
         <div className="card-premium p-6 text-center text-[13px] text-secondary">
-          Nenhum membro encontrado.
+          {loadError ? 'Carregamento falhou (veja erro acima)' : 'Nenhum membro encontrado.'}
         </div>
       ) : (
         <div className="card-premium overflow-hidden">
