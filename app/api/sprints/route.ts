@@ -5,18 +5,29 @@ import { createSprintSchema, validateBody } from '@/lib/validators';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json([], { status: 200 });
     const wsId = await getDefaultWorkspaceId();
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
 
     let whereClause = 's.workspace_id = $1';
-    const params: string[] = [wsId];
+    const params: unknown[] = [wsId];
 
     if (projectId) {
       params.push(projectId);
       whereClause += ` AND s.project_id = $${params.length}`;
+    }
+
+    const userIsAdmin = isAdmin(auth.role);
+    if (!userIsAdmin) {
+      params.push(auth.id);
+      const idx = params.length;
+      whereClause += ` AND (
+        EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = s.project_id AND pr.member_id = $${idx})
+        OR EXISTS (SELECT 1 FROM board_roles br JOIN boards b ON b.id = br.board_id WHERE b.project_id = s.project_id AND br.member_id = $${idx})
+      )`;
     }
 
     const result = await query(

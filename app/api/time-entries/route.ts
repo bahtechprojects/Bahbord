@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultMemberId } from '@/lib/db';
-import { getAuthMember } from '@/lib/api-auth';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { hasTicketAccess } from '@/lib/access-check';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('ticket_id');
@@ -13,15 +15,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'ticket_id obrigatório' }, { status: 400 });
     }
 
+    const allowed = await hasTicketAccess(auth, ticketId);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    const userIsAdmin = isAdmin(auth.role);
+    const params: unknown[] = [ticketId];
+    let memberFilter = '';
+    if (!userIsAdmin) {
+      params.push(auth.id);
+      memberFilter = ` AND te.member_id = $${params.length}`;
+    }
+
     const result = await query(
       `SELECT te.id, te.description, te.started_at, te.ended_at,
         te.duration_minutes, te.is_running, te.is_billable, te.created_at,
         m.display_name AS member_name
       FROM time_entries te
       LEFT JOIN members m ON m.id = te.member_id
-      WHERE te.ticket_id = $1
+      WHERE te.ticket_id = $1${memberFilter}
       ORDER BY te.created_at DESC`,
-      [ticketId]
+      params
     );
 
     return NextResponse.json(result.rows);

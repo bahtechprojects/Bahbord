@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { getAuthMember } from '@/lib/api-auth';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json([], { status: 200 });
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
     const limitParam = parseInt(searchParams.get('limit') || '12');
@@ -12,8 +13,23 @@ export async function GET(request: Request) {
 
     const isValidUuid = projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
 
-    const projectFilter = isValidUuid ? `AND t.project_id = $2` : '';
-    const params: unknown[] = isValidUuid ? [limit, projectId] : [limit];
+    const params: unknown[] = [limit];
+    let projectFilter = '';
+    if (isValidUuid) {
+      params.push(projectId);
+      projectFilter = ` AND t.project_id = $${params.length}`;
+    }
+
+    const userIsAdmin = isAdmin(auth.role);
+    let accessFilter = '';
+    if (!userIsAdmin) {
+      params.push(auth.id);
+      const idx = params.length;
+      accessFilter = ` AND (
+        EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = t.project_id AND pr.member_id = $${idx})
+        OR EXISTS (SELECT 1 FROM board_roles br JOIN boards b ON b.id = br.board_id WHERE b.project_id = t.project_id AND br.member_id = $${idx})
+      )`;
+    }
 
     const result = await query(`
       SELECT
@@ -23,7 +39,7 @@ export async function GET(request: Request) {
       FROM activity_log a
       JOIN tickets_full t ON t.id = a.ticket_id
       LEFT JOIN members m ON m.id = a.member_id
-      WHERE t.is_archived = false ${projectFilter}
+      WHERE t.is_archived = false ${projectFilter} ${accessFilter}
       ORDER BY a.created_at DESC
       LIMIT $1
     `, params);

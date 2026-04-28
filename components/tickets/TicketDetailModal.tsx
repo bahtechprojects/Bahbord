@@ -315,7 +315,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                         ) : (
                           <div onClick={() => setEditingDesc(true)} className="cursor-text text-[14px] leading-relaxed text-secondary hover:text-primary transition-colors">
                             {ticket.description ? (
-                              <div className="text-primary" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.description) }} />
+                              <div className="rich-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.description) }} />
                             ) : (
                               <p className="italic text-[var(--text-tertiary)]">Clique para adicionar uma descrição...</p>
                             )}

@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { v4 as uuid4 } from 'uuid';
 import { getDb, COLLECTIONS } from '@/lib/mongodb';
 import type { AuditTrailDoc } from '@/lib/mongo-schemas';
-import { getAuthMember } from '@/lib/api-auth';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    if (!isAdmin(auth.role)) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
     const workspaceId = searchParams.get('workspace_id');

@@ -302,7 +302,7 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
                     className="cursor-text text-[14px] leading-relaxed text-slate-300"
                   >
                     {ticket.description ? (
-                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.description) }} />
+                      <div className="rich-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.description) }} />
                     ) : (
                       <p className="text-slate-600 italic">Clique para adicionar uma descrição...</p>
                     )}

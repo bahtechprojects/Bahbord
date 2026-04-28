@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getAuthMember } from '@/lib/api-auth';
+import { hasTicketAccess } from '@/lib/access-check';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('ticket_id');
 
     if (!ticketId) {
       return NextResponse.json({ error: 'ticket_id obrigatório' }, { status: 400 });
+    }
+
+    const allowed = await hasTicketAccess(auth, ticketId);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
     const result = await query(

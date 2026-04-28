@@ -409,7 +409,50 @@ select option {
   overflow: hidden;
 }
 
-/* TipTap editor */
+/* Conteúdo rico renderizado em modo leitura (descrição, comentários) */
+.rich-content { color: var(--text-primary); font-size: 14px; line-height: 1.6; }
+.rich-content p { margin: 0.4rem 0; }
+.rich-content p:first-child { margin-top: 0; }
+.rich-content p:last-child { margin-bottom: 0; }
+.rich-content h1 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0.7rem 0 0.3rem; }
+.rich-content h2 { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin: 0.6rem 0 0.2rem; }
+.rich-content h3 { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin: 0.4rem 0 0.2rem; }
+.rich-content ul { list-style-type: disc; padding-left: 1.2rem; margin: 0.4rem 0; }
+.rich-content ol { list-style-type: decimal; padding-left: 1.2rem; margin: 0.4rem 0; }
+.rich-content li { margin: 0.15rem 0; }
+.rich-content strong { color: var(--text-primary); font-weight: 600; }
+.rich-content em { font-style: italic; }
+.rich-content a { color: var(--accent); text-decoration: underline; }
+.rich-content a:hover { color: var(--accent-hover); }
+.rich-content code {
+  background: var(--overlay-subtle);
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+  color: #f59e0b;
+  font-family: var(--font-mono);
+}
+.rich-content pre {
+  background: var(--bg-input);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.rich-content pre code { background: none; padding: 0; color: var(--text-primary); }
+.rich-content blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 0.8rem;
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+}
+.rich-content hr { border: none; border-top: 1px solid var(--border-solid); margin: 0.8rem 0; }
+.rich-content img { max-width: 100%; border-radius: 6px; margin: 0.4rem 0; }
+
+/* TipTap editor (modo edição) */
 .ProseMirror { outline: none; }
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
