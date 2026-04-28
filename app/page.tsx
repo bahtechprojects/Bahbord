@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
@@ -9,8 +10,15 @@ import Sparkline from '@/components/dashboard/Sparkline';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
+import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export default async function HomePage({ searchParams }: { searchParams: { project_id?: string; board_id?: string } }) {
+  // Dashboard global é admin-only; membros vão pra /my-tasks
+  const auth = await getAuthMember();
+  if (auth && !isAdmin(auth.role)) {
+    redirect('/my-tasks');
+  }
+
   const sp = await searchParams;
   let project_id = sp.project_id;
 

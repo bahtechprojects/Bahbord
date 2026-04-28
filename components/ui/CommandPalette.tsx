@@ -6,7 +6,7 @@ import { Command } from 'cmdk';
 import {
   Search, Columns3, List, Inbox, Zap, CalendarDays, Clock,
   FolderKanban, Users, Settings, FileText, BookOpen, Home,
-  Sun, Moon,
+  Sun, Moon, Star, Calendar,
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
@@ -22,7 +22,21 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const { toggleTheme, resolvedTheme } = useTheme();
+
+  // Detecta role do usuário para filtrar ações disponíveis
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const role = data?.member?.role;
+        setIsAdmin(role === 'owner' || role === 'admin');
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -105,43 +119,53 @@ export default function CommandPalette() {
             </Command.Empty>
 
             {/* Quick actions */}
-            {query.length < 2 && (
+            {query.length < 2 && authChecked && (
               <>
-                <Command.Group heading="Ações" className={groupHeadingClass}>
-                  <Command.Item onSelect={() => run(() => router.push('/'))} className={itemClass}>
-                    <Home size={14} /> Ir para Dashboard
+                {/* Pessoal — todos os usuários */}
+                <Command.Group heading="Pessoal" className={groupHeadingClass}>
+                  <Command.Item onSelect={() => run(() => router.push('/inbox'))} className={itemClass}>
+                    <Inbox size={14} /> Caixa de entrada
                   </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/board'))} className={itemClass}>
-                    <Columns3 size={14} /> Ir para Quadro
+                  <Command.Item onSelect={() => run(() => router.push('/my-tasks'))} className={itemClass}>
+                    <Star size={14} /> Minhas tarefas
                   </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/list'))} className={itemClass}>
-                    <List size={14} /> Ir para Lista
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/backlog'))} className={itemClass}>
-                    <Inbox size={14} /> Ir para Backlog
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/sprints'))} className={itemClass}>
-                    <Zap size={14} /> Ir para Sprints
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/timeline'))} className={itemClass}>
-                    <CalendarDays size={14} /> Ir para Cronograma
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/timesheet'))} className={itemClass}>
-                    <Clock size={14} /> Ir para Timesheet
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/docs'))} className={itemClass}>
-                    <BookOpen size={14} /> Ir para Documentação
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/projects'))} className={itemClass}>
-                    <FolderKanban size={14} /> Ir para Projetos
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/clients'))} className={itemClass}>
-                    <Users size={14} /> Ir para Clientes
-                  </Command.Item>
-                  <Command.Item onSelect={() => run(() => router.push('/settings'))} className={itemClass}>
-                    <Settings size={14} /> Configurações
+                  <Command.Item onSelect={() => run(() => router.push('/this-week'))} className={itemClass}>
+                    <Calendar size={14} /> Esta semana
                   </Command.Item>
                 </Command.Group>
+
+                {/* Workspace — só admin */}
+                {isAdmin && (
+                  <Command.Group heading="Workspace" className={groupHeadingClass}>
+                    <Command.Item onSelect={() => run(() => router.push('/'))} className={itemClass}>
+                      <Home size={14} /> Dashboard
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/boards'))} className={itemClass}>
+                      <Columns3 size={14} /> Boards
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/sprints'))} className={itemClass}>
+                      <Zap size={14} /> Sprints
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/timeline'))} className={itemClass}>
+                      <CalendarDays size={14} /> Cronograma
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/timesheet'))} className={itemClass}>
+                      <Clock size={14} /> Timesheet
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/docs'))} className={itemClass}>
+                      <BookOpen size={14} /> Documentação
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/projects'))} className={itemClass}>
+                      <FolderKanban size={14} /> Projetos
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/clients'))} className={itemClass}>
+                      <Users size={14} /> Clientes
+                    </Command.Item>
+                    <Command.Item onSelect={() => run(() => router.push('/settings'))} className={itemClass}>
+                      <Settings size={14} /> Configurações
+                    </Command.Item>
+                  </Command.Group>
+                )}
 
                 <Command.Group heading="Tema" className={groupHeadingClass}>
                   <Command.Item onSelect={() => run(() => toggleTheme())} className={itemClass}>

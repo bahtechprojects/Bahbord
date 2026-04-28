@@ -81,7 +81,7 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
           fetch('/api/options?type=services'),
           fetch('/api/options?type=members'),
           fetch('/api/options?type=categories'),
-          fetch('/api/options?type=sprints'),
+          fetch(ticket.project_id ? `/api/options?type=sprints&project_id=${ticket.project_id}` : '/api/options?type=sprints'),
           fetch('/api/options?type=clients'),
         ]);
         if (statusRes.ok) setStatuses(await statusRes.json());
@@ -128,7 +128,7 @@ export default function TicketSidebar({ ticket, onUpdate }: TicketSidebarProps) 
       } catch (err) { console.error('Erro ao carregar opções:', err); }
     }
     fetchOptions();
-  }, []);
+  }, [ticket.project_id, ticket.board_id]);
 
   async function handleSelect(field: string, value: string) {
     setEditingField(null);

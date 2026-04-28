@@ -138,14 +138,16 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
   // Escape fecha modal
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'm' && !e.ctrlKey && !e.metaKey &&
-          document.activeElement?.tagName !== 'INPUT' &&
-          document.activeElement?.tagName !== 'TEXTAREA' &&
-          document.activeElement?.tagName !== 'SELECT') {
-        const input = document.querySelector<HTMLInputElement>('input[placeholder*="comentário"]');
-        if (input) { e.preventDefault(); input.focus(); }
-      }
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'm' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = document.activeElement as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (target.isContentEditable) return;
+      if (target.closest('[contenteditable="true"], .ProseMirror')) return;
+      const input = document.querySelector<HTMLInputElement>('input[placeholder*="comentário"]');
+      if (input) { e.preventDefault(); input.focus(); }
     }
     if (ticketId) {
       window.addEventListener('keydown', handleKey);

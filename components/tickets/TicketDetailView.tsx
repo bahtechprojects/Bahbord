@@ -114,10 +114,17 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'm' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA' && document.activeElement?.tagName !== 'SELECT') {
-        const commentInput = document.querySelector<HTMLInputElement>('input[placeholder*="comentário"]');
-        if (commentInput) { e.preventDefault(); commentInput.focus(); }
-      }
+      if (e.key !== 'm' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = document.activeElement as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName;
+      // Não interceptar se foco está num campo editável (input, textarea, select,
+      // ou qualquer contenteditable como o TipTap)
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (target.isContentEditable) return;
+      if (target.closest('[contenteditable="true"], .ProseMirror')) return;
+      const commentInput = document.querySelector<HTMLInputElement>('input[placeholder*="comentário"]');
+      if (commentInput) { e.preventDefault(); commentInput.focus(); }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
