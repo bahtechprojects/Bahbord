@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
         tf.id, tf.workspace_id, tf.title, tf.description, tf.priority,
         tf.due_date, tf.sequence_number, tf.created_at, tf.updated_at,
         tf.completed_at, tf.is_archived, tf.parent_id, tf.ticket_key,
-        tf.type_id, tf.type_name, tf.type_icon, tf.type_color,
+        tf.ticket_type_id AS type_id, tf.type_name, tf.type_icon, tf.type_color,
         tf.status_id, tf.status_name, tf.status_color, tf.status_position, tf.is_done,
         tf.service_id, tf.service_name, tf.service_color,
         tf.category_id, tf.category_name,

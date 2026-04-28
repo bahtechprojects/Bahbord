@@ -111,9 +111,12 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
     }).catch(() => {});
   }, []);
 
+  const [fetchError, setFetchError] = useState<{ status: number; message: string } | null>(null);
+
   const fetchTicket = useCallback(async () => {
     if (!ticketId) return;
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch(`/api/tickets/${ticketId}`);
       if (res.ok) {
@@ -121,9 +124,17 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
         setTicket(data);
         setTitleValue(data.title);
         setDescValue(data.description || '');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setFetchError({ status: res.status, message: err.error || res.statusText });
+        console.error(`GET /api/tickets/${ticketId} failed`, res.status, err);
       }
-    } catch (err) { console.error('Erro ao carregar ticket:', err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setFetchError({ status: 0, message: err instanceof Error ? err.message : 'Erro de rede' });
+      console.error('Erro ao carregar ticket:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [ticketId]);
 
   useEffect(() => {
@@ -218,8 +229,18 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
 
             {/* Error */}
             {!loading && !ticket && (
-              <div className="flex flex-1 items-center justify-center text-[14px] text-secondary">
-                Ticket não encontrado
+              <div className="flex flex-1 items-center justify-center px-6">
+                <div className="card-premium max-w-[440px] p-6 text-center">
+                  <h2 className="font-serif text-[20px] text-primary">
+                    {fetchError?.status === 403 ? 'Sem acesso a este ticket' : fetchError?.status === 404 ? 'Ticket não encontrado' : 'Erro ao carregar'}
+                  </h2>
+                  <p className="mt-2 text-[12.5px] text-secondary leading-relaxed">
+                    {fetchError?.status === 403 ? 'Você não tem permissão. Peça pra um admin atribuir você ao projeto deste ticket.'
+                      : fetchError?.status === 404 ? 'O ticket pode ter sido removido.'
+                      : fetchError ? fetchError.message
+                      : 'Não foi possível carregar.'}
+                  </p>
+                </div>
               </div>
             )}
 
