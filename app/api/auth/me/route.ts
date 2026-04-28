@@ -17,6 +17,7 @@ export async function GET() {
         email: member.email,
         role: member.role,
         is_approved: member.is_approved,
+        can_track_time: member.can_track_time === true,
       },
       workspace_id: member.workspace_id,
     });

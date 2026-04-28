@@ -9,6 +9,7 @@ export interface AuthMember {
   display_name: string;
   email: string;
   is_approved: boolean;
+  can_track_time?: boolean;
 }
 
 /**
@@ -27,14 +28,26 @@ export async function getAuthMember(): Promise<AuthMember | null> {
     if (!userId) return null;
 
     // Look up member by Clerk user ID
-    const result = await query<AuthMember>(
+    // Fallback: se can_track_time não existir (migration 038 não rodou) usa query sem ele
+    let result = await query<AuthMember>(
       `SELECT m.id, m.workspace_id, m.display_name, m.email, m.is_approved,
-        COALESCE(orr.role, 'viewer') AS role
+        COALESCE(orr.role, 'viewer') AS role,
+        COALESCE(m.can_track_time, false) AS can_track_time
       FROM members m
       LEFT JOIN org_roles orr ON orr.member_id = m.id AND orr.workspace_id = m.workspace_id
       WHERE m.clerk_user_id = $1`,
       [userId]
-    );
+    ).catch(async () => {
+      return await query<AuthMember>(
+        `SELECT m.id, m.workspace_id, m.display_name, m.email, m.is_approved,
+          COALESCE(orr.role, 'viewer') AS role,
+          false AS can_track_time
+        FROM members m
+        LEFT JOIN org_roles orr ON orr.member_id = m.id AND orr.workspace_id = m.workspace_id
+        WHERE m.clerk_user_id = $1`,
+        [userId]
+      );
+    });
 
     if (result.rows[0]) {
       // Update avatar from Clerk (non-blocking)

@@ -12,13 +12,14 @@ export async function GET() {
     // Detect optional columns to be defensive against missing migrations
     const colCheck = await query<{ column_name: string }>(
       `SELECT column_name FROM information_schema.columns
-       WHERE table_name = 'members' AND column_name IN ('is_client', 'is_approved', 'phone', 'avatar_url')`
+       WHERE table_name = 'members' AND column_name IN ('is_client', 'is_approved', 'phone', 'avatar_url', 'can_track_time')`
     );
     const cols = new Set(colCheck.rows.map((r) => r.column_name));
     const isClientExpr = cols.has('is_client') ? 'COALESCE(m.is_client, false)' : 'false';
     const isApprovedExpr = cols.has('is_approved') ? 'COALESCE(m.is_approved, false)' : 'true';
     const phoneExpr = cols.has('phone') ? 'm.phone' : 'NULL';
     const avatarExpr = cols.has('avatar_url') ? 'm.avatar_url' : 'NULL';
+    const canTrackTimeExpr = cols.has('can_track_time') ? 'COALESCE(m.can_track_time, false)' : 'false';
 
     const sql = `
       SELECT
@@ -29,6 +30,7 @@ export async function GET() {
         ${avatarExpr} AS avatar_url,
         ${isApprovedExpr} AS is_approved,
         ${isClientExpr} AS is_client,
+        ${canTrackTimeExpr} AS can_track_time,
         COALESCE(orr.role, m.role, 'member') AS role,
         COALESCE(
           (

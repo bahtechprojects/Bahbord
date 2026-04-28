@@ -22,6 +22,7 @@ interface Member {
   avatar_url: string | null;
   is_approved: boolean;
   is_client: boolean;
+  can_track_time: boolean;
   role: string;
   projects: ProjectAssignment[];
 }
@@ -161,6 +162,25 @@ export default function MembersSettings() {
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role } : m)));
   }
 
+  async function handleToggleTimeTracking(id: string, current: boolean) {
+    const next = !current;
+    // Optimistic
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, can_track_time: next } : m)));
+    const res = await fetch('/api/members/time-tracking', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: id, can_track_time: next }),
+    });
+    if (!res.ok) {
+      // Revert
+      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, can_track_time: current } : m)));
+      const err = await res.json().catch(() => ({}));
+      toast(err.error || 'Erro ao alterar Time Tracking', 'error');
+    } else {
+      toast(next ? 'Time Tracking liberado' : 'Time Tracking desativado', 'success');
+    }
+  }
+
   async function handleApprove(id: string) {
     const res = await fetch('/api/settings', {
       method: 'PATCH',
@@ -279,7 +299,7 @@ export default function MembersSettings() {
           </div>
           <div className="border-t border-[var(--card-border)]">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-3 last:border-0">
+              <div key={i} className="grid grid-cols-[1.5fr_1.5fr_110px_1fr_60px_110px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-3 last:border-0">
                 <div className="flex items-center gap-2">
                   <div className="h-7 w-7 rounded-full bg-[var(--overlay-hover)] animate-pulse" />
                   <div className="h-3 w-24 rounded bg-[var(--overlay-hover)] animate-pulse" />
@@ -287,6 +307,7 @@ export default function MembersSettings() {
                 <div className="h-3 w-3/4 rounded bg-[var(--overlay-hover)] animate-pulse" />
                 <div className="h-7 rounded bg-[var(--overlay-subtle)] animate-pulse" />
                 <div className="h-5 w-2/3 rounded bg-[var(--overlay-subtle)] animate-pulse" />
+                <div className="h-4 w-7 rounded-full bg-[var(--overlay-subtle)] animate-pulse" />
                 <div className="h-3 w-16 rounded bg-[var(--overlay-subtle)] animate-pulse" />
                 <div />
               </div>
@@ -302,7 +323,7 @@ export default function MembersSettings() {
     return (
       <div
         key={`${sectionProjectId || 'flat'}-${m.id}`}
-        className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-2.5 last:border-0 hover:bg-[var(--overlay-subtle)]"
+        className="grid grid-cols-[1.5fr_1.5fr_110px_1fr_60px_110px_36px] items-center gap-3 border-b border-[var(--card-border)] px-4 py-2.5 last:border-0 hover:bg-[var(--overlay-subtle)]"
       >
         {/* Membro + status */}
         <div className="flex items-center gap-2 min-w-0">
@@ -396,6 +417,25 @@ export default function MembersSettings() {
           )}
         </div>
 
+        {/* Time Tracking toggle */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => handleToggleTimeTracking(m.id, m.can_track_time)}
+            title={m.can_track_time ? 'Desativar Time Tracking pra este usuário' : 'Liberar Time Tracking pra este usuário'}
+            aria-pressed={m.can_track_time}
+            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+              m.can_track_time ? 'bg-[var(--accent)]' : 'bg-[var(--overlay-hover)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                m.can_track_time ? 'translate-x-3.5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Telefone */}
         <div>
           {editingPhoneId === m.id ? (
@@ -461,11 +501,12 @@ export default function MembersSettings() {
 
   function renderColumnHeaders() {
     return (
-      <div className="grid grid-cols-[1.5fr_1.5fr_120px_1fr_120px_36px] items-center gap-3 border-b border-[var(--card-border)] bg-[var(--overlay-subtle)] px-4 py-2 text-[10px] uppercase tracking-wider text-secondary font-medium">
+      <div className="grid grid-cols-[1.5fr_1.5fr_110px_1fr_60px_110px_36px] items-center gap-3 border-b border-[var(--card-border)] bg-[var(--overlay-subtle)] px-4 py-2 text-[10px] uppercase tracking-wider text-secondary font-medium">
         <span>Membro</span>
         <span>Email</span>
         <span>Role</span>
         <span>Projetos</span>
+        <span title="Time Tracking">Time</span>
         <span>Telefone</span>
         <span></span>
       </div>

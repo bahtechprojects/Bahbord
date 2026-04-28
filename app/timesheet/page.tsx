@@ -3,10 +3,15 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import TimesheetView from '@/components/timesheet/TimesheetView';
-import { requireAdmin } from '@/lib/page-guards';
+import { requireApproved } from '@/lib/page-guards';
+import { isAdmin } from '@/lib/api-auth';
+import { redirect } from 'next/navigation';
 
 export default async function TimesheetPage() {
-  await requireAdmin();
+  // Acesso: admin (vê tudo) OU member com can_track_time (vê só os próprios)
+  const auth = await requireApproved();
+  const allowed = isAdmin(auth.role) || auth.can_track_time === true;
+  if (!allowed) redirect('/my-tasks');
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />

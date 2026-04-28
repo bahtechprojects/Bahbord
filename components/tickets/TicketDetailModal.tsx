@@ -78,7 +78,9 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
   const [descOpen, setDescOpen] = useState(true);
   const [activityOpen, setActivityOpen] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [canTrackTime, setCanTrackTime] = useState(false);
   const isAdmin = userRole === 'owner' || userRole === 'admin';
+  const showTimeTracker = isAdmin || canTrackTime;
   const { toast } = useToast();
   const { confirm } = useConfirm();
 
@@ -108,6 +110,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(data => {
       if (data?.member?.role) setUserRole(data.member.role);
+      setCanTrackTime(data?.member?.can_track_time === true);
     }).catch(() => {});
   }, []);
 
@@ -388,7 +391,7 @@ export default function TicketDetailModal({ ticketId, onClose }: TicketDetailMod
                   {/* Right sidebar — metadata */}
                   <div className="w-full md:w-[300px] shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-[var(--card-border)] bg-[var(--bg-secondary)] px-5 py-5">
                     <TicketSidebar ticket={ticket} onUpdate={updateField} />
-                    {isAdmin && (
+                    {showTimeTracker && (
                       <div className="mt-5 pt-5 border-t border-[var(--card-border)]">
                         <TimeTracker ticketId={ticket.id} />
                       </div>

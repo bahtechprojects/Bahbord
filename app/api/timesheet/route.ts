@@ -5,11 +5,20 @@ import { getAuthMember, isAdmin } from '@/lib/api-auth';
 export async function GET(request: Request) {
   try {
     const auth = await getAuthMember();
-    if (!auth || !isAdmin(auth.role)) {
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+
+    const userIsAdmin = isAdmin(auth.role);
+    const canSelfTrack = auth.can_track_time === true;
+    if (!userIsAdmin && !canSelfTrack) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
+
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || '7'; // dias
+    const period = searchParams.get('period') || '7';
+
+    // Não-admin: filtra só os próprios entries
+    const memberFilter = userIsAdmin ? '' : 'AND te.member_id = $2';
+    const params: unknown[] = userIsAdmin ? [period] : [period, auth.id];
 
     const result = await query(
       `SELECT
@@ -20,12 +29,11 @@ export async function GET(request: Request) {
       FROM time_entries te
       LEFT JOIN members m ON m.id = te.member_id
       LEFT JOIN tickets_full tf ON tf.id = te.ticket_id
-      WHERE te.started_at > NOW() - ($1 || ' days')::interval
+      WHERE te.started_at > NOW() - ($1 || ' days')::interval ${memberFilter}
       ORDER BY te.started_at DESC`,
-      [period]
+      params
     );
 
-    // Resumo por membro
     const summary = await query(
       `SELECT
         m.display_name AS member_name,
@@ -35,11 +43,11 @@ export async function GET(request: Request) {
         COUNT(te.id)::int AS entry_count
       FROM time_entries te
       LEFT JOIN members m ON m.id = te.member_id
-      WHERE te.started_at > NOW() - ($1 || ' days')::interval
+      WHERE te.started_at > NOW() - ($1 || ' days')::interval ${memberFilter}
         AND te.is_running = false
       GROUP BY m.display_name
       ORDER BY total_minutes DESC`,
-      [period]
+      params
     );
 
     return NextResponse.json({
