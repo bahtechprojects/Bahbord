@@ -122,12 +122,19 @@ export async function createNotification({
         entity_id || null,
         ticketId,
         title,
-        message || null,
+        message || title || '',
         link || null,
       ]
     );
   } catch (err) {
-    console.error('createNotification error:', err);
+    // Log com contexto pra facilitar debug em produção
+    console.error('createNotification FAILED', {
+      workspace_id,
+      recipient_id,
+      type,
+      title,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
