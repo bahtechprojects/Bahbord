@@ -30,8 +30,8 @@ export default function PasswordPrompt({ slug, error }: PasswordPromptProps) {
             <Lock size={22} className="text-accent" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">Link protegido</h1>
-            <p className="mt-1 text-[12px] text-slate-500">
+            <h1 className="text-lg font-bold text-primary">Link protegido</h1>
+            <p className="mt-1 text-[12px] text-secondary">
               Informe a senha para acessar este painel.
             </p>
           </div>

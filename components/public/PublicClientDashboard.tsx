@@ -80,7 +80,7 @@ export default function PublicClientDashboard({ link, tickets, stats }: PublicCl
       >
         <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-6 py-8">
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white shadow-lg"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-primary shadow-lg"
             style={{ backgroundColor: projectColor }}
           >
             {projectName.charAt(0).toUpperCase()}
@@ -89,7 +89,7 @@ export default function PublicClientDashboard({ link, tickets, stats }: PublicCl
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Painel do cliente
             </p>
-            <h1 className="truncate text-2xl font-bold text-white tracking-tight">
+            <h1 className="truncate text-2xl font-bold text-primary tracking-tight">
               {projectName}
             </h1>
           </div>
@@ -120,10 +120,10 @@ export default function PublicClientDashboard({ link, tickets, stats }: PublicCl
                       {card.label}
                     </span>
                     <div className={`rounded-lg p-2 ${card.iconBg}`}>
-                      <Icon size={16} className="text-white" />
+                      <Icon size={16} className="text-primary" />
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-white tracking-tight tabular-nums">
+                  <p className="text-3xl font-bold text-primary tracking-tight tabular-nums">
                     {card.value}
                   </p>
                 </div>

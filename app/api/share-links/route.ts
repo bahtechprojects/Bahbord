@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
 import { hashSharePassword, generateSlug } from '@/lib/share-links';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 export async function GET() {
   try {
@@ -85,7 +86,26 @@ export async function POST(request: Request) {
       ]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    const created = result.rows[0] as { id: string; slug: string; project_id: string | null; board_id: string | null };
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'share_link.created',
+      entityType: 'share_link',
+      entityId: created.id,
+      changes: {
+        slug: created.slug,
+        project_id: created.project_id,
+        board_id: created.board_id,
+        has_password: !!passwordHash,
+        expires_at: expires_at || null,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error('POST /api/share-links error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
@@ -108,14 +128,27 @@ export async function DELETE(request: Request) {
 
     const workspaceId = auth.workspace_id || (await getDefaultWorkspaceId());
 
-    const result = await query(
-      `DELETE FROM share_links WHERE id = $1 AND workspace_id = $2 RETURNING id`,
+    const result = await query<{ id: string; slug: string }>(
+      `DELETE FROM share_links WHERE id = $1 AND workspace_id = $2 RETURNING id, slug`,
       [id, workspaceId]
     );
 
     if (result.rowCount === 0) {
       return NextResponse.json({ error: 'Share link não encontrado' }, { status: 404 });
     }
+
+    const deleted = result.rows[0];
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'share_link.revoked',
+      entityType: 'share_link',
+      entityId: deleted.id,
+      changes: { slug: deleted.slug },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { sendWelcomeEmail } from '@/lib/email';
 
 // GET — listar pedidos de aprovação (pendentes, aprovados, rejeitados)
 export async function GET(request: Request) {
@@ -197,6 +198,28 @@ export async function PATCH(request: Request) {
         [approval.workspace_id, approval.requester_id, targetRole]
       );
       await query(`UPDATE members SET is_approved = true WHERE id = $1`, [approval.requester_id]);
+
+      // Enviar welcome email (fire-and-forget, não bloqueia em erro)
+      try {
+        const memberInfo = await query<{ display_name: string; email: string; workspace_name: string }>(
+          `SELECT m.display_name, m.email, w.name AS workspace_name
+           FROM members m
+           JOIN workspaces w ON w.id = $2
+           WHERE m.id = $1`,
+          [approval.requester_id, approval.workspace_id]
+        );
+        const info = memberInfo.rows[0];
+        if (info?.email) {
+          // não usamos await — fire-and-forget
+          void sendWelcomeEmail({
+            to: info.email,
+            name: info.display_name || info.email,
+            workspaceName: info.workspace_name || 'Bah!Flow',
+          });
+        }
+      } catch (emailErr) {
+        console.error('[approvals] falha ao preparar welcome email:', emailErr);
+      }
 
       // Também dar acesso a um board específico se informado
       if (board_id) {

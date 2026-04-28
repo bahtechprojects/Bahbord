@@ -50,9 +50,11 @@ interface TicketCardProps {
   assigneeAvatar?: string | null;
   active: boolean;
   onClick: () => void;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export default function TicketCard({ id, title, service, serviceColor, due, assignee, priority, ticketKey, typeIcon, typeName, categoryName, completedAt, clientName, assigneeAvatar, active, onClick }: TicketCardProps) {
+export default function TicketCard({ id, title, service, serviceColor, due, assignee, priority, ticketKey, typeIcon, typeName, categoryName, completedAt, clientName, assigneeAvatar, active, onClick, selected, onToggleSelect }: TicketCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const { openTicket } = useBoardShell();
@@ -99,8 +101,19 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
       style={style}
       {...attributes}
       {...listeners}
-      onClick={() => { if (!isDragging) openTicket(id); }}
+      onClick={(e) => {
+        if (isDragging) return;
+        // Cmd/Ctrl/Shift+Click → toggle seleção (bulk mode)
+        if ((e.metaKey || e.ctrlKey || e.shiftKey) && onToggleSelect) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSelect();
+          return;
+        }
+        openTicket(id);
+      }}
       aria-label={ticketKey + ': ' + title}
+      aria-selected={selected}
       role="button"
       className={cn(
         'card-premium group cursor-pointer',
@@ -108,7 +121,8 @@ export default function TicketCard({ id, title, service, serviceColor, due, assi
         'border-l-[3px]',
         prio.border,
         isDragging && 'opacity-30 rotate-2 scale-105',
-        active && 'ring-2 ring-accent/30 border-accent/20'
+        active && 'ring-2 ring-accent/30 border-accent/20',
+        selected && 'ring-2 ring-[var(--accent)] border-[var(--accent)]'
       )}
     >
       <div className="px-3 py-3">

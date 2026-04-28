@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 const ALLOWED_EVENTS = new Set([
   'ticket.created',
@@ -103,7 +104,25 @@ export async function POST(request: Request) {
       ]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    const created = result.rows[0] as { id: string; name: string; trigger_event: string; action_type: string; project_id: string | null };
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'automation.created',
+      entityType: 'automation',
+      entityId: created.id,
+      changes: {
+        name: created.name,
+        trigger_event: created.trigger_event,
+        action_type: created.action_type,
+        project_id: created.project_id,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error('POST /api/automations error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
@@ -182,7 +201,21 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Automação não encontrada' }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    const updated = result.rows[0] as { id: string; workspace_id: string };
+    const meta = extractRequestMeta(request);
+    const changedKeys = Object.keys(body).filter((k) => k !== 'id');
+    await logAudit({
+      workspaceId: updated.workspace_id,
+      actorId: auth.id,
+      action: 'automation.updated',
+      entityType: 'automation',
+      entityId: updated.id,
+      changes: { fields: changedKeys, is_active: body.is_active },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json(updated);
   } catch (err) {
     console.error('PATCH /api/automations error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
@@ -202,10 +235,26 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'id é obrigatório' }, { status: 400 });
     }
 
-    const result = await query(`DELETE FROM automations WHERE id = $1`, [id]);
+    const result = await query<{ id: string; workspace_id: string; name: string }>(
+      `DELETE FROM automations WHERE id = $1 RETURNING id, workspace_id, name`,
+      [id]
+    );
     if (result.rowCount === 0) {
       return NextResponse.json({ error: 'Automação não encontrada' }, { status: 404 });
     }
+
+    const deleted = result.rows[0];
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId: deleted.workspace_id,
+      actorId: auth.id,
+      action: 'automation.deleted',
+      entityType: 'automation',
+      entityId: deleted.id,
+      changes: { name: deleted.name },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

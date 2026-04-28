@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 /**
  * PATCH /api/members/time-tracking
@@ -19,8 +20,8 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'member_id e can_track_time obrigatórios' }, { status: 400 });
     }
 
-    const result = await query(
-      `UPDATE members SET can_track_time = $1 WHERE id = $2 RETURNING id, can_track_time`,
+    const result = await query<{ id: string; can_track_time: boolean }>(
+      `UPDATE members SET can_track_time = $1 WHERE id = $2 RETURNING id, can_track_time, workspace_id`,
       [can_track_time, member_id]
     );
 
@@ -28,7 +29,20 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Membro não encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    const row = result.rows[0] as { id: string; can_track_time: boolean; workspace_id?: string };
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId: row.workspace_id || auth.workspace_id,
+      actorId: auth.id,
+      action: 'member.time_tracking_toggled',
+      entityType: 'member',
+      entityId: member_id,
+      changes: { can_track_time },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json({ id: row.id, can_track_time: row.can_track_time });
   } catch (err) {
     console.error('PATCH /api/members/time-tracking error:', err);
     return NextResponse.json(

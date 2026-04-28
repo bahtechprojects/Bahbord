@@ -30,6 +30,8 @@ interface ColumnProps {
   activeItemId: string | null;
   onSelectCard: (id: string) => void;
   wipLimit?: number | null;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
 const columnAccents: Record<string, string> = {
@@ -46,7 +48,7 @@ const statusKeyToName: Record<string, string> = {
   done: 'CONCLUÍDO',
 };
 
-export default function KanbanColumn({ id, title, color, cards, activeItemId, onSelectCard, wipLimit }: ColumnProps) {
+export default function KanbanColumn({ id, title, color, cards, activeItemId, onSelectCard, wipLimit, selectedIds, onToggleSelect }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const { createInColumn } = useBoardShell();
   const accent = columnAccents[id] || color;
@@ -87,13 +89,20 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
               key={card.id}
               {...card}
               active={activeItemId === card.id}
+              selected={selectedIds?.has(card.id)}
+              onToggleSelect={onToggleSelect ? () => onToggleSelect(card.id) : undefined}
               onClick={() => onSelectCard(card.id)}
             />
           ))}
           {cards.length === 0 && !isOver && (
-            <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-white/[0.04] text-[11px] text-slate-600">
-              Sem tickets
-            </div>
+            <button
+              onClick={() => createInColumn(id)}
+              className="group/empty flex w-full h-20 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[var(--card-border)] text-[11px] text-[var(--text-tertiary)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition-colors"
+            >
+              <Plus size={16} strokeWidth={1.5} className="opacity-60 group-hover/empty:opacity-100" />
+              Nenhum ticket aqui
+              <span className="text-[10px] opacity-60">clique pra criar</span>
+            </button>
           )}
           {isOver && (
             <div className="flex h-10 items-center justify-center rounded-md border border-dashed border-blue-500/30 bg-blue-500/[0.04] text-[11px] text-blue-400">

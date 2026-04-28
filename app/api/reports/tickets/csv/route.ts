@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     const rows = result.rows.map((r: any) => [
       r.ticket_key, r.title, r.priority, r.status_name, r.service_name, r.assignee_name,
       r.reporter_name, r.client_name, r.sprint_name, r.type_name, r.due_date, r.created_at, r.completed_at,
-    ].map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
+    ].map((v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ').replace(/\t/g, ' ')}"`).join(','));
 
     const csv = '﻿' + [headers.join(','), ...rows].join('\n');
 

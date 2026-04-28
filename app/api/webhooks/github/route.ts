@@ -61,7 +61,8 @@ export async function POST(request: Request) {
         ...extractKeys(pr.head?.ref || ''),
       ];
       const uniqueKeys = Array.from(new Set(keys));
-      const state = pr.merged ? 'merged' : pr.state;
+      // Confiável: merged_at vem populado quando PR foi mergeado (mais consistente que pr.merged)
+      const state = (pr.merged === true || pr.merged_at) ? 'merged' : pr.state;
 
       for (const key of uniqueKeys) {
         const ticketId = await findTicketByKey(key);

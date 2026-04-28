@@ -59,7 +59,7 @@ export default function Modal({
           >
             {title && (
               <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-                <h2 className="text-[16px] font-semibold text-white">{title}</h2>
+                <h2 className="text-[16px] font-semibold text-primary">{title}</h2>
                 <button
                   type="button"
                   onClick={onClose}

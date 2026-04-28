@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import KanbanColumn from './KanbanColumn';
 import TicketCard from './TicketCard';
 import BoardFilters from './BoardFilters';
+import BulkActionBar from './BulkActionBar';
 import { useBoard, type BoardItems } from '@/lib/hooks/useBoard';
 
 export type { TicketItem, BoardItems } from '@/lib/hooks/useBoard';
@@ -37,6 +38,37 @@ export default function KanbanBoard({ initialItems, wipLimits = {}, availablePro
   } = useBoard(initialItems, wipLimits);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  // Bulk selection (Cmd/Ctrl+Click no card)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [statuses, setStatuses] = useState<Array<{ id: string; name: string; color: string }>>([]);
+
+  useEffect(() => {
+    fetch('/api/options?type=statuses')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setStatuses(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Esc limpa seleção
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' && selectedIds.size > 0) {
+        setSelectedIds(new Set());
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedIds.size]);
 
   const availableServices = useMemo(() =>
     [...new Set(allTickets.map((t) => t.service).filter((s) => s !== 'Sem serviço'))],
@@ -100,6 +132,8 @@ export default function KanbanBoard({ initialItems, wipLimits = {}, availablePro
                 activeItemId={selectedCard}
                 onSelectCard={setSelectedCard}
                 wipLimit={wipLimits[column.id] ?? null}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
               />
             </div>
           ))}
@@ -118,6 +152,13 @@ export default function KanbanBoard({ initialItems, wipLimits = {}, availablePro
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Floating bulk action bar */}
+      <BulkActionBar
+        selectedIds={Array.from(selectedIds)}
+        onClear={() => setSelectedIds(new Set())}
+        statuses={statuses}
+      />
     </div>
   );
 }

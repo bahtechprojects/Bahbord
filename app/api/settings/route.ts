@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId, filterAllowedColumns } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
+
+// Tabelas pra auditar mutações (subset do allowedTables, focado no sensível).
+const AUDIT_SENSITIVE_TABLES = new Set(['members', 'clients']);
 
 // GET workspace settings
 export async function GET() {
@@ -54,6 +58,21 @@ export async function PATCH(request: Request) {
         `UPDATE ${table} SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
         values
       );
+
+      if (AUDIT_SENSITIVE_TABLES.has(table)) {
+        const meta = extractRequestMeta(request);
+        await logAudit({
+          workspaceId: auth.workspace_id,
+          actorId: auth.id,
+          action: `${table}.updated`,
+          entityType: table,
+          entityId: id,
+          changes: safeFields as Record<string, unknown>,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+        });
+      }
+
       return NextResponse.json(result.rows[0]);
     }
 
@@ -81,6 +100,18 @@ export async function PATCH(request: Request) {
       `UPDATE workspaces SET ${sets.join(', ')} WHERE id = $${idx + 1} RETURNING *`,
       values
     );
+
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId: wsId,
+      actorId: auth.id,
+      action: 'workspace.updated',
+      entityType: 'workspace',
+      entityId: wsId,
+      changes: body,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return NextResponse.json(result.rows[0]);
   } catch (err) {
@@ -122,6 +153,21 @@ export async function POST(request: Request) {
       `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
       values
     );
+
+    if (AUDIT_SENSITIVE_TABLES.has(table)) {
+      const created = result.rows[0] as { id: string };
+      const meta = extractRequestMeta(request);
+      await logAudit({
+        workspaceId,
+        actorId: auth.id,
+        action: `${table}.created`,
+        entityType: table,
+        entityId: created?.id,
+        changes: safeFields as Record<string, unknown>,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+    }
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (err) {
@@ -192,6 +238,21 @@ export async function DELETE(request: Request) {
     }
 
     await query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+
+    if (AUDIT_SENSITIVE_TABLES.has(table)) {
+      const meta = extractRequestMeta(request);
+      await logAudit({
+        workspaceId: auth.workspace_id,
+        actorId: auth.id,
+        action: `${table}.deleted`,
+        entityType: table,
+        entityId: id,
+        changes: {},
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/settings error:', err);

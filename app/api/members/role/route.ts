@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 export async function PATCH(request: Request) {
   try {
@@ -20,9 +21,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Role inválido' }, { status: 400 });
     }
 
-    // Get workspace_id from member
-    const memberResult = await query(
-      `SELECT workspace_id FROM members WHERE id = $1`,
+    // Get workspace_id + role atual (pra audit log)
+    const memberResult = await query<{ workspace_id: string; current_role: string | null }>(
+      `SELECT m.workspace_id, orr.role AS current_role
+         FROM members m
+         LEFT JOIN org_roles orr ON orr.member_id = m.id AND orr.workspace_id = m.workspace_id
+        WHERE m.id = $1`,
       [member_id]
     );
 
@@ -31,6 +35,7 @@ export async function PATCH(request: Request) {
     }
 
     const workspaceId = memberResult.rows[0].workspace_id;
+    const previousRole = memberResult.rows[0].current_role;
 
     // Upsert org_roles
     await query(
@@ -43,6 +48,18 @@ export async function PATCH(request: Request) {
 
     // Also update the legacy role column on members table
     await query(`UPDATE members SET role = $1 WHERE id = $2`, [role, member_id]);
+
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'member.role_changed',
+      entityType: 'member',
+      entityId: member_id,
+      changes: { from: previousRole, to: role },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return NextResponse.json({ ok: true, role });
   } catch (err) {

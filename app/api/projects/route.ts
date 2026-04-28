@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
 import { createProjectSchema } from '@/lib/validators';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 export async function GET(request: Request) {
   try {
@@ -150,6 +151,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'project.created',
+      entityType: 'project',
+      entityId: project.id,
+      changes: { name: project.name, prefix: project.prefix, color: project.color, template_id: template_id || null },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
     return NextResponse.json(project, { status: 201 });
   } catch (err) {
     console.error('POST /api/projects error:', err);
@@ -195,7 +208,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    const updated = result.rows[0] as { id: string; workspace_id: string };
+    const meta = extractRequestMeta(request);
+    const changedFields: Record<string, unknown> = {};
+    if (name !== undefined) changedFields.name = name;
+    if (description !== undefined) changedFields.description = description;
+    if (color !== undefined) changedFields.color = color;
+    if (is_archived !== undefined) changedFields.is_archived = is_archived;
+    await logAudit({
+      workspaceId: updated.workspace_id,
+      actorId: auth.id,
+      action: is_archived === true ? 'project.archived' : 'project.updated',
+      entityType: 'project',
+      entityId: updated.id,
+      changes: changedFields,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json(updated);
   } catch (err) {
     console.error('PATCH /api/projects error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
@@ -225,7 +256,20 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, project: result.rows[0] });
+    const archived = result.rows[0] as { id: string; workspace_id: string; name: string };
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId: archived.workspace_id,
+      actorId: auth.id,
+      action: 'project.archived',
+      entityType: 'project',
+      entityId: archived.id,
+      changes: { name: archived.name, via: 'DELETE' },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+
+    return NextResponse.json({ success: true, project: archived });
   } catch (err) {
     console.error('DELETE /api/projects error:', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });

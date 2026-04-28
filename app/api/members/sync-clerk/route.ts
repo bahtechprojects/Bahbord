@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { logAudit, extractRequestMeta } from '@/lib/audit';
 
 interface SyncSummary {
   total_clerk_users: number;
@@ -121,6 +122,25 @@ export async function POST(request: Request) {
         summary.errors.push({ clerk_id: u.id, error: e instanceof Error ? e.message : String(e) });
       }
     }
+
+    const meta = extractRequestMeta(request);
+    await logAudit({
+      workspaceId,
+      actorId: auth.id,
+      action: 'member.sync_clerk',
+      entityType: 'member',
+      entityId: null,
+      changes: {
+        auto_approve: autoApprove,
+        total_clerk_users: summary.total_clerk_users,
+        created: summary.created,
+        linked_by_email: summary.linked_by_email,
+        updated: summary.updated,
+        errors_count: summary.errors.length,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
 
     return NextResponse.json(summary);
   } catch (err) {
