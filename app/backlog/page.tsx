@@ -8,8 +8,9 @@ import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
 import TicketTypeIcon from '@/components/ui/TicketTypeIcon';
 import { Inbox } from 'lucide-react';
-import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { isAdmin } from '@/lib/api-auth';
 import { hasBoardAccess, hasProjectAccess } from '@/lib/access-check';
+import { requireApproved } from '@/lib/page-guards';
 
 const priorityLabels: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: '#ef4444' },
@@ -20,17 +21,17 @@ const priorityLabels: Record<string, { label: string; color: string }> = {
 
 export default async function BacklogPage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
   const { board_id, project_id } = await searchParams;
-  const auth = await getAuthMember();
-  const userIsAdmin = auth ? isAdmin(auth.role) : false;
+  const auth = await requireApproved();
+  const userIsAdmin = isAdmin(auth.role);
 
   // Validate access BEFORE querying tickets (skip for admins)
-  if (auth && !userIsAdmin) {
+  if (!userIsAdmin) {
     if (board_id) {
       const ok = await hasBoardAccess(auth, board_id);
-      if (!ok) redirect('/');
+      if (!ok) redirect('/my-tasks');
     } else if (project_id) {
       const ok = await hasProjectAccess(auth, project_id);
-      if (!ok) redirect('/');
+      if (!ok) redirect('/my-tasks');
     }
   }
 

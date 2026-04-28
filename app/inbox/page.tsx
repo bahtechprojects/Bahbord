@@ -3,10 +3,10 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import InboxView from '@/components/personal/InboxView';
 import ApprovalGate from '@/components/ui/ApprovalGate';
-import { getAuthMember } from '@/lib/api-auth';
+import { requireApproved } from '@/lib/page-guards';
 
 export default async function InboxPage() {
-  const auth = await getAuthMember();
+  const auth = await requireApproved();
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">

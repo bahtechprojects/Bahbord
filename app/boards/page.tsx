@@ -3,6 +3,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import BoardsListing from '@/components/boards/BoardsListing';
 import { query } from '@/lib/db';
+import { requireAdmin } from '@/lib/page-guards';
 
 type BoardRow = {
   id: string;
@@ -16,6 +17,7 @@ type BoardRow = {
 };
 
 export default async function BoardsPage() {
+  await requireAdmin();
   const result = await query<BoardRow>(
     `SELECT
       b.id, b.name, b.type, b.project_id,

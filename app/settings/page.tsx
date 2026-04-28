@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import SettingsView from '@/components/settings/SettingsView';
+import { requireAdmin } from '@/lib/page-guards';
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await requireAdmin();
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />

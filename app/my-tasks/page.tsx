@@ -4,10 +4,10 @@ import Header from '@/components/layout/Header';
 import PersonalTicketList from '@/components/personal/PersonalTicketList';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query } from '@/lib/db';
-import { getAuthMember } from '@/lib/api-auth';
+import { requireApproved } from '@/lib/page-guards';
 
 export default async function MyTasksPage() {
-  const auth = await getAuthMember();
+  const auth = await requireApproved();
   const memberId = auth?.id;
 
   let tickets: any[] = [];

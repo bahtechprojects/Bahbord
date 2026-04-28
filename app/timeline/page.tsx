@@ -4,8 +4,10 @@ import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import TimelineView from '@/components/timeline/TimelineView';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
+import { requireAdmin } from '@/lib/page-guards';
 
 export default async function TimelinePage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
+  await requireAdmin();
   const { board_id, project_id } = await searchParams;
   const wsId = await getDefaultWorkspaceId();
 

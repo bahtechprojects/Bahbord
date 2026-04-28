@@ -8,18 +8,29 @@ import { createTicketSchema } from '@/lib/validators';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
+    const userIsAdmin = auth.role === 'owner' || auth.role === 'admin';
     const { searchParams } = new URL(request.url);
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
+
+    // Não-admin: filtra por tickets de projetos/boards onde tem acesso
+    const accessFilter = userIsAdmin
+      ? ''
+      : `AND (
+          EXISTS (SELECT 1 FROM project_roles pr WHERE pr.project_id = t.project_id AND pr.member_id = $1)
+          OR EXISTS (SELECT 1 FROM board_roles br WHERE br.board_id = t.board_id AND br.member_id = $1)
+        )`;
 
     const baseQuery = `
       FROM tickets t
       LEFT JOIN statuses s ON s.id = t.status_id
       LEFT JOIN services sv ON sv.id = t.service_id
       LEFT JOIN members m ON m.id = t.assignee_id
-      WHERE t.is_archived = false`;
+      WHERE t.is_archived = false ${accessFilter}`;
+    const accessParams: unknown[] = userIsAdmin ? [] : [auth.id];
 
     // If no page param, return all results (backward compat for board view)
     if (!pageParam) {
@@ -32,7 +43,8 @@ export async function GET(request: Request) {
           sv.name AS service,
           m.display_name AS assignee
         ${baseQuery}
-        ORDER BY t.created_at DESC`
+        ORDER BY t.created_at DESC`,
+        accessParams.length ? accessParams : undefined
       );
       return NextResponse.json(result.rows);
     }
@@ -40,9 +52,12 @@ export async function GET(request: Request) {
     const page = Math.max(1, parseInt(pageParam) || 1);
     const limit = Math.max(1, Math.min(200, parseInt(limitParam || '50') || 50));
     const offset = (page - 1) * limit;
+    const limitIdx = userIsAdmin ? 1 : 2;
+    const offsetIdx = userIsAdmin ? 2 : 3;
+    const paginParams = userIsAdmin ? [limit, offset] : [auth.id, limit, offset];
 
     const [countResult, result] = await Promise.all([
-      query(`SELECT COUNT(*) AS total ${baseQuery}`),
+      query(`SELECT COUNT(*) AS total ${baseQuery}`, accessParams.length ? accessParams : undefined),
       query(
         `SELECT
           t.id,
@@ -53,8 +68,8 @@ export async function GET(request: Request) {
           m.display_name AS assignee
         ${baseQuery}
         ORDER BY t.created_at DESC
-        LIMIT $1 OFFSET $2`,
-        [limit, offset]
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        paginParams
       ),
     ]);
 

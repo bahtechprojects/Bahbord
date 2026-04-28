@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import KanbanBoard from '@/components/board/KanbanBoard';
 import BoardShell from '@/components/board/BoardShell';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
-import { getAuthMember, isAdmin } from '@/lib/api-auth';
+import { isAdmin } from '@/lib/api-auth';
 import { hasBoardAccess, hasProjectAccess } from '@/lib/access-check';
+import { requireApproved } from '@/lib/page-guards';
 
 type BoardTicket = {
   id: string;
@@ -63,17 +64,17 @@ function mapTicket(ticket: BoardTicket) {
 
 export default async function BoardPage({ searchParams }: { searchParams: { board_id?: string; project_id?: string } }) {
   const { board_id, project_id } = await searchParams;
-  const auth = await getAuthMember();
-  const userIsAdmin = auth ? isAdmin(auth.role) : false;
+  const auth = await requireApproved();
+  const userIsAdmin = isAdmin(auth.role);
 
   // Validate access BEFORE querying tickets (skip for admins)
-  if (auth && !userIsAdmin) {
+  if (!userIsAdmin) {
     if (board_id) {
       const ok = await hasBoardAccess(auth, board_id);
-      if (!ok) redirect('/');
+      if (!ok) redirect('/my-tasks');
     } else if (project_id) {
       const ok = await hasProjectAccess(auth, project_id);
-      if (!ok) redirect('/');
+      if (!ok) redirect('/my-tasks');
     }
   }
 

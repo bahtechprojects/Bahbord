@@ -3,8 +3,10 @@ import { Suspense } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import DocsLayout from '@/components/docs/DocsLayout';
+import { requireAdmin } from '@/lib/page-guards';
 
-export default function DocsPage() {
+export default async function DocsPage() {
+  await requireAdmin();
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />

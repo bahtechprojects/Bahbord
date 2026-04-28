@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import { query, getDefaultMemberId } from '@/lib/db';
 import { dispatchWebhook } from '@/lib/webhooks';
 import { getAuthMember } from '@/lib/api-auth';
+import { hasTicketAccess } from '@/lib/access-check';
 import { createNotification, extractMentions } from '@/lib/notifications';
 import { createCommentSchema, validateBody } from '@/lib/validators';
 
 export async function GET(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const ticketId = searchParams.get('ticket_id');
@@ -16,9 +18,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'ticket_id obrigatório' }, { status: 400 });
     }
 
+    // Validar acesso ao ticket (admin bypassa)
+    const canAccess = await hasTicketAccess(auth, ticketId);
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
     const result = await query(
       `SELECT
         c.id, c.body, c.created_at, c.updated_at,
+        c.author_id,
         m.display_name AS author_name, m.email AS author_email, m.avatar_url AS author_avatar
       FROM comments c
       JOIN members m ON m.id = c.author_id
@@ -121,7 +130,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
     const body = await request.json();
     const { id, content } = body;
@@ -130,13 +140,18 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'id e content são obrigatórios' }, { status: 400 });
     }
 
+    // Author OR admin pode editar
+    const isAdminUser = auth.role === 'owner' || auth.role === 'admin';
+    const ownerCondition = isAdminUser ? '' : 'AND author_id = $3';
+    const params: unknown[] = isAdminUser ? [content.trim(), id] : [content.trim(), id, auth.id];
+
     const result = await query(
-      `UPDATE comments SET body = $1, updated_at = NOW() WHERE id = $2 RETURNING id, body, updated_at`,
-      [content.trim(), id]
+      `UPDATE comments SET body = $1, updated_at = NOW() WHERE id = $2 ${ownerCondition} RETURNING id, body, updated_at`,
+      params
     );
 
     if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Comentário não encontrado' }, { status: 404 });
+      return NextResponse.json({ error: 'Sem permissão ou comentário não encontrado' }, { status: 403 });
     }
 
     return NextResponse.json(result.rows[0]);
@@ -148,7 +163,8 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    await getAuthMember();
+    const auth = await getAuthMember();
+    if (!auth) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -157,10 +173,14 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'id obrigatório' }, { status: 400 });
     }
 
-    const result = await query(`DELETE FROM comments WHERE id = $1`, [id]);
+    // Author OR admin pode deletar
+    const isAdminUser = auth.role === 'owner' || auth.role === 'admin';
+    const result = isAdminUser
+      ? await query(`DELETE FROM comments WHERE id = $1`, [id])
+      : await query(`DELETE FROM comments WHERE id = $1 AND author_id = $2`, [id, auth.id]);
 
     if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Comentário não encontrado' }, { status: 404 });
+      return NextResponse.json({ error: 'Sem permissão ou comentário não encontrado' }, { status: 403 });
     }
 
     return NextResponse.json({ ok: true });

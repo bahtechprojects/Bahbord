@@ -3,8 +3,10 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import SprintsView from '@/components/sprints/SprintsView';
+import { requireAdmin } from '@/lib/page-guards';
 
-export default function SprintsPage() {
+export default async function SprintsPage() {
+  await requireAdmin();
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />

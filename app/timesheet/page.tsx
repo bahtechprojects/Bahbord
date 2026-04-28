@@ -3,8 +3,10 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
 import TimesheetView from '@/components/timesheet/TimesheetView';
+import { requireAdmin } from '@/lib/page-guards';
 
-export default function TimesheetPage() {
+export default async function TimesheetPage() {
+  await requireAdmin();
   return (
     <div className="flex h-screen overflow-hidden bg-surface text-primary">
       <Sidebar />

@@ -4,8 +4,10 @@ import Header from '@/components/layout/Header';
 import ReportsView from '@/components/reports/ReportsView';
 import ApprovalGate from '@/components/ui/ApprovalGate';
 import { query, getDefaultWorkspaceId } from '@/lib/db';
+import { requireAdmin } from '@/lib/page-guards';
 
 export default async function ReportsPage() {
+  await requireAdmin();
   const wsId = await getDefaultWorkspaceId();
   const projects = await query(
     `SELECT id, name, color FROM projects WHERE workspace_id = $1 AND is_archived = false ORDER BY name`,
