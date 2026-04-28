@@ -192,7 +192,7 @@ export default function PublicClientDashboard({ link, tickets, stats }: PublicCl
         {/* Footer */}
         <footer className="pt-4 pb-8 text-center">
           <p className="text-[10px] uppercase tracking-wider text-slate-600">
-            Powered by <span className="font-semibold text-slate-500">Bahboard</span>
+            Powered by <span className="font-semibold text-slate-500">Bah!Flow</span>
           </p>
         </footer>
       </main>

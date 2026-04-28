@@ -31,7 +31,7 @@ const pageTitles: Record<string, string> = {
 
 export default function Header({ onCreateTicket }: HeaderProps) {
   const pathname = usePathname();
-  const pageTitle = pageTitles[pathname] || 'BahBoard';
+  const pageTitle = pageTitles[pathname] || 'Bah!Flow';
   const searchParams = useSearchParams();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [boardName, setBoardName] = useState<string | null>(null);

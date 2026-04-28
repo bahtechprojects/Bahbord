@@ -25,7 +25,7 @@ function InvalidState({ title, message }: { title: string; message: string }) {
         <h1 className="text-lg font-bold text-white">{title}</h1>
         <p className="mt-2 text-[12px] text-slate-500">{message}</p>
         <p className="mt-6 text-[10px] uppercase tracking-wider text-slate-600">
-          Powered by Bahboard
+          Powered by Bah!Flow
         </p>
       </div>
     </div>

@@ -25,8 +25,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: 'Bahboard',
-  description: 'Sistema de gestão de projetos',
+  title: 'Bah!Flow',
+  description: 'Bah!Flow — gestão de projetos editorial',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

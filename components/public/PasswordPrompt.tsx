@@ -70,7 +70,7 @@ export default function PasswordPrompt({ slug, error }: PasswordPromptProps) {
         </form>
 
         <p className="mt-6 text-center text-[10px] uppercase tracking-wider text-slate-600">
-          Powered by Bahboard
+          Powered by Bah!Flow
         </p>
       </div>
     </div>

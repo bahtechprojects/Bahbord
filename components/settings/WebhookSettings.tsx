@@ -108,7 +108,7 @@ export default function WebhookSettings() {
         headers,
         body: JSON.stringify({
           event: 'test',
-          data: { message: 'Teste de webhook do BahBoard' },
+          data: { message: 'Teste de webhook do Bah!Flow' },
           timestamp: new Date().toISOString(),
         }),
       });

@@ -87,7 +87,10 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
     }).catch(() => {});
   }, []);
 
+  const [fetchError, setFetchError] = useState<{ status: number; message: string } | null>(null);
+
   const fetchTicket = useCallback(async () => {
+    setFetchError(null);
     try {
       const res = await fetch(`/api/tickets/${ticketId}`);
       if (res.ok) {
@@ -95,9 +98,16 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
         setTicket(data);
         setTitleValue(data.title);
         setDescValue(data.description || '');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setFetchError({ status: res.status, message: err.error || res.statusText });
       }
-    } catch (err) { console.error('Erro ao carregar ticket:', err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setFetchError({ status: 0, message: err instanceof Error ? err.message : 'Erro de rede' });
+      console.error('Erro ao carregar ticket:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [ticketId]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
@@ -165,10 +175,26 @@ export default function TicketDetailView({ ticketId }: TicketDetailViewProps) {
   if (loading) return <DetailSkeleton />;
 
   if (!ticket) {
+    const isForbidden = fetchError?.status === 403;
+    const isNotFound = fetchError?.status === 404;
     return (
-      <div className="flex h-64 flex-col items-center justify-center text-slate-400">
-        <p>Ticket não encontrado</p>
-        <Link href="/board" className="mt-2 text-sm text-blue-400 hover:text-blue-300">Voltar ao board</Link>
+      <div className="mx-auto max-w-[600px] py-16">
+        <div className="card-premium p-8 text-center">
+          <h2 className="font-serif text-[24px] text-primary">
+            {isForbidden ? 'Sem acesso a este ticket' : isNotFound ? 'Ticket não encontrado' : 'Erro ao carregar'}
+          </h2>
+          <p className="mt-2 text-[13px] text-secondary">
+            {isForbidden
+              ? 'Você não tem permissão. Peça pra um admin atribuir você ao projeto deste ticket.'
+              : isNotFound
+              ? 'O ticket pode ter sido removido ou o link está errado.'
+              : `Houve um problema: ${fetchError?.message || 'erro desconhecido'}`}
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <Link href="/" className="btn-premium btn-secondary">Dashboard</Link>
+            <Link href="/my-tasks" className="btn-premium btn-primary">Minhas tarefas</Link>
+          </div>
+        </div>
       </div>
     );
   }
