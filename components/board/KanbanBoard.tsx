@@ -81,6 +81,13 @@ export default function KanbanBoard({ initialItems, wipLimits = {}, availablePro
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        autoScroll={{
+          enabled: true,
+          // Aciona scroll quando o cursor está em 25% da borda (vertical e horizontal)
+          threshold: { x: 0.15, y: 0.25 },
+          acceleration: 12,
+          interval: 5,
+        }}
       >
         <div className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory md:snap-none">
           {columns.map((column) => (

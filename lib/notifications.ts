@@ -91,8 +91,7 @@ export async function createNotification({
   message?: string;
   link?: string;
 }) {
-  // Não notifica a si mesmo
-  if (actor_id && actor_id === recipient_id) return;
+  // Auto-menção: permitido (útil pra lembrete e pra confirmar que o sistema funciona)
   if (!recipient_id) return;
 
   try {

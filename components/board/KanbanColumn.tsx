@@ -79,9 +79,9 @@ export default function KanbanColumn({ id, title, color, cards, activeItemId, on
         </button>
       </div>
 
-      {/* Cards */}
+      {/* Cards — min-h-[100px] garante área de drop mesmo coluna vazia */}
       <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 space-y-[5px] overflow-y-auto">
+        <div className="flex-1 space-y-[5px] overflow-y-auto min-h-[100px] pr-1">
           {cards.map((card) => (
             <TicketCard
               key={card.id}
