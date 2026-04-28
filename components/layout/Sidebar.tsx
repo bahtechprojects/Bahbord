@@ -33,7 +33,6 @@ export default function Sidebar() {
   const [projects, setProjects] = useState<Array<{ id: string; name: string; prefix: string; color: string }>>([]);
   const [boards, setBoards] = useState<Array<{ id: string; name: string; type: string; project_id: string; is_default?: boolean }>>([]);
   const [me, setMe] = useState<MeData | null>(null);
-  const [memberCount, setMemberCount] = useState<number>(0);
   const [pendingApprovals, setPendingApprovals] = useState<number>(0);
   const [counts, setCounts] = useState<{ inbox: number; my_tasks: number; this_week: number }>({ inbox: 0, my_tasks: 0, this_week: 0 });
   const { currentProjectId, setProject, setBoard } = useProject();
@@ -64,13 +63,6 @@ export default function Sidebar() {
             if (apRes.ok) {
               const data = await apRes.json();
               setPendingApprovals(Array.isArray(data) ? data.length : 0);
-            }
-          } catch {}
-          try {
-            const optRes = await fetch('/api/options?type=members');
-            if (optRes.ok) {
-              const data = await optRes.json();
-              setMemberCount(Array.isArray(data) ? data.length : 0);
             }
           } catch {}
         }
@@ -129,28 +121,24 @@ export default function Sidebar() {
   const sidebarContent = (
     <>
       {/* Workspace header */}
-      <div className={cn('flex items-center gap-2.5 px-3 py-3', collapsed && 'justify-center px-2')}>
+      <div className={cn('flex items-center gap-2 px-3 py-3', collapsed && 'justify-center px-2')}>
         {collapsed ? (
           <img src="/bahflow-favicon-dark.svg" alt="Bah!Flow" className="h-7 w-7 rounded-md" />
         ) : (
           <>
-            <img src="/bahflow-favicon-dark.svg" alt="Bah!Flow" className="h-8 w-8 rounded-md shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-white truncate">Bah!Company</div>
-              <div className="text-[10.5px] text-slate-500 mt-px">workspace{memberCount > 0 ? ` · ${memberCount} membros` : ''}</div>
-            </div>
+            <img src="/bahflow-logo-dark.svg" alt="Bah!Flow" className="h-6 object-contain object-left flex-1 min-w-0" />
             {isAdminUser && (
               <Tooltip content="Novo projeto" side="right">
                 <button
                   onClick={() => { window.location.href = '/projects'; }}
-                  className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  className="rounded p-1 text-slate-500 hover:bg-white/[0.06] hover:text-white transition-colors shrink-0"
                   aria-label="Novo projeto"
                 >
                   <Plus size={14} />
                 </button>
               </Tooltip>
             )}
-            <button onClick={() => setMobileOpen(false)} aria-label="Fechar menu" className="text-slate-500 hover:text-slate-300 md:hidden">
+            <button onClick={() => setMobileOpen(false)} aria-label="Fechar menu" className="text-slate-500 hover:text-slate-300 md:hidden shrink-0">
               <X size={16} />
             </button>
           </>
