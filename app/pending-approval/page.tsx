@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { Clock } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import SignOutButton from './SignOutButton';
+import Logo from '@/components/ui/Logo';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
 
 export default async function PendingApprovalPage() {
@@ -13,7 +14,7 @@ export default async function PendingApprovalPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface text-center p-6">
       <div className="max-w-md">
-        <img src="/logo-bahtech.svg" alt="Bah!Flow" className="h-8 mb-8 mx-auto object-contain dark:invert-0 invert" />
+        <div className="mb-8 flex justify-center"><Logo className="h-8 object-contain" /></div>
         <div className="rounded-full bg-amber-500/10 p-5 inline-flex mb-5">
           <Clock size={36} className="text-amber-400" />
         </div>

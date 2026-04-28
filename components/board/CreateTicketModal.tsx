@@ -328,7 +328,8 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
                   <div>
                     <label className={labelClass}>Espaço {requiredDot}</label>
                     <div className="flex items-center gap-2 rounded-md border border-[var(--card-border)] bg-[var(--overlay-subtle)] px-3 py-2 text-[13px] text-primary">
-                      <img src="/logo-bahtech.svg" alt="" className="h-3.5 object-contain dark:invert-0 invert" />
+                      <img src="/bahflow-favicon.svg" alt="" className="h-3.5 object-contain block dark:hidden" />
+                      <img src="/bahflow-favicon-dark.svg" alt="" aria-hidden="true" className="h-3.5 object-contain hidden dark:block" />
                       Bah!Company (BAH)
                     </div>
                   </div>

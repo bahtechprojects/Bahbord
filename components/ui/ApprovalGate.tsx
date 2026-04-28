@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, LogOut } from 'lucide-react';
 import { useClerk } from '@clerk/nextjs';
+import Logo from './Logo';
 
 export default function ApprovalGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'loading' | 'approved' | 'pending'>('loading');
@@ -34,7 +35,7 @@ export default function ApprovalGate({ children }: { children: React.ReactNode }
   if (status === 'pending') {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface text-center p-6">
-        <img src="/logo-bahtech.svg" alt="BahTech" className="h-8 mb-8 object-contain dark:invert-0 invert" />
+        <Logo className="h-8 mb-8 object-contain" />
         <div className="rounded-full bg-amber-500/10 p-5 mb-5">
           <Clock size={40} className="text-amber-400" />
         </div>

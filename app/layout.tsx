@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   description: 'Bah!Flow — gestão de projetos editorial',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/bahflow-favicon-dark.svg', type: 'image/svg+xml' },
     ],
   },
 };

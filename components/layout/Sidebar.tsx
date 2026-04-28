@@ -131,14 +131,10 @@ export default function Sidebar() {
       {/* Workspace header */}
       <div className={cn('flex items-center gap-2.5 px-3 py-3', collapsed && 'justify-center px-2')}>
         {collapsed ? (
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent)] text-[11px] font-bold text-white">
-            B!
-          </div>
+          <img src="/bahflow-favicon-dark.svg" alt="Bah!Flow" className="h-7 w-7 rounded-md" />
         ) : (
           <>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--accent)] text-[12px] font-bold text-white shrink-0">
-              B!
-            </div>
+            <img src="/bahflow-favicon-dark.svg" alt="Bah!Flow" className="h-8 w-8 rounded-md shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-white truncate">Bah!Company</div>
               <div className="text-[10.5px] text-slate-500 mt-px">workspace{memberCount > 0 ? ` · ${memberCount} membros` : ''}</div>
