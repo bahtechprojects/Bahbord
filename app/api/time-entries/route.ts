@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     }
 
     if (action === 'start') {
-      // Parar qualquer timer rodando para este ticket
+      // Parar qualquer timer rodando para este ticket (mín 1 min, arredonda pra cima)
       await query(
         `UPDATE time_entries SET is_running = false, ended_at = NOW(),
-          duration_minutes = EXTRACT(EPOCH FROM (NOW() - started_at)) / 60
+          duration_minutes = GREATEST(1, CEIL(EXTRACT(EPOCH FROM (NOW() - started_at)) / 60))::int
         WHERE ticket_id = $1 AND is_running = true`,
         [ticket_id]
       );
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     if (action === 'stop') {
       const result = await query(
         `UPDATE time_entries SET is_running = false, ended_at = NOW(),
-          duration_minutes = EXTRACT(EPOCH FROM (NOW() - started_at)) / 60
+          duration_minutes = GREATEST(1, CEIL(EXTRACT(EPOCH FROM (NOW() - started_at)) / 60))::int
         WHERE ticket_id = $1 AND is_running = true
         RETURNING *`,
         [ticket_id]
