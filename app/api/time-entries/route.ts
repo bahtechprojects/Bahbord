@@ -98,15 +98,16 @@ export async function POST(request: Request) {
     // Log manual: action = 'log'
     if (action === 'log') {
       const { duration_minutes, description, is_billable } = body;
-      if (!duration_minutes || duration_minutes <= 0) {
+      const durMinutes = parseInt(String(duration_minutes), 10);
+      if (!durMinutes || durMinutes <= 0) {
         return NextResponse.json({ error: 'duration_minutes deve ser > 0' }, { status: 400 });
       }
 
       const result = await query(
         `INSERT INTO time_entries (ticket_id, member_id, started_at, ended_at, duration_minutes, is_running, description, is_billable)
-         VALUES ($1, $2, NOW() - ($3 || ' minutes')::interval, NOW(), $3, false, $4, $5)
+         VALUES ($1, $2, NOW() - make_interval(mins => $3::int), NOW(), $3::int, false, $4, $5)
          RETURNING *`,
-        [ticket_id, memberId, duration_minutes, description || null, is_billable !== false]
+        [ticket_id, memberId, durMinutes, description || null, is_billable !== false]
       );
       return NextResponse.json(result.rows[0], { status: 201 });
     }

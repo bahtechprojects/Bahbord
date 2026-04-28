@@ -91,7 +91,7 @@ export function useTimeTracking(ticketId: string) {
   }, 0);
 
   const logManualEntry = useCallback(async (durationMinutes: number, description: string, isBillable: boolean) => {
-    await fetch('/api/time-entries', {
+    const res = await fetch('/api/time-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -102,6 +102,10 @@ export function useTimeTracking(ticketId: string) {
         is_billable: isBillable,
       }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
     await fetchEntries();
   }, [ticketId, fetchEntries]);
 

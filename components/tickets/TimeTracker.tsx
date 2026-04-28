@@ -52,8 +52,8 @@ export default function TimeTracker({ ticketId }: TimeTrackerProps) {
       setManualMinutes(30);
       setManualDescription('');
       setManualBillable(true);
-    } catch {
-      toast('Erro ao registrar', 'error');
+    } catch (err) {
+      toast(err instanceof Error ? `Erro: ${err.message}` : 'Erro ao registrar', 'error');
     } finally {
       setSubmitting(false);
     }
