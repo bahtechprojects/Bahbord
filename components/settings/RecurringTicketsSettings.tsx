@@ -94,22 +94,36 @@ export default function RecurringTicketsSettings() {
 
   const fetchOptions = useCallback(async () => {
     try {
-      const [pr, br, tt, sv, mem] = await Promise.all([
+      const [pr, br, tt, sv] = await Promise.all([
         fetch('/api/options?type=projects'),
         fetch('/api/options?type=boards'),
         fetch('/api/options?type=ticket_types'),
         fetch('/api/options?type=services'),
-        fetch('/api/options?type=members'),
       ]);
       if (pr.ok) setProjects(await pr.json());
       if (br.ok) setBoards(await br.json());
       if (tt.ok) setTicketTypes(await tt.json());
       if (sv.ok) setServices(await sv.json());
-      if (mem.ok) setMembers(await mem.json());
     } catch (err) {
       console.error('Erro ao carregar opções:', err);
     }
   }, []);
+
+  // Carrega members filtrados pelo projeto/board selecionado no form
+  useEffect(() => {
+    async function loadMembers() {
+      try {
+        let url = '/api/options?type=members';
+        if (form.board_id) url = `/api/members/by-access?board_id=${form.board_id}`;
+        else if (form.project_id) url = `/api/members/by-access?project_id=${form.project_id}`;
+        const res = await fetch(url);
+        if (res.ok) setMembers(await res.json());
+      } catch {
+        // fallback: mantém lista anterior
+      }
+    }
+    loadMembers();
+  }, [form.project_id, form.board_id]);
 
   useEffect(() => {
     fetchItems();
