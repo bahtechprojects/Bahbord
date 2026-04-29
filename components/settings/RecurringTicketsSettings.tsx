@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, Repeat, Loader2, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Repeat, Loader2, X, Play } from 'lucide-react';
 
 interface RecurringTicket {
   id: string;
@@ -231,6 +231,27 @@ export default function RecurringTicketsSettings() {
       fetchItems();
     } catch (err) {
       console.error('Erro ao remover:', err);
+    }
+  }
+
+  async function handleRunNow(id: string, name: string) {
+    if (!confirm(`Criar ticket agora a partir de "${name}"? (Não altera o cron — só dispara uma execução manual de teste.)`)) return;
+    try {
+      const res = await fetch('/api/recurring-tickets/run-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Ticket criado: "${data.title}". Veja no board.`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Erro: ${err.error || 'falha ao executar'}`);
+      }
+    } catch (err) {
+      console.error('Erro ao executar agora:', err);
+      alert('Erro de rede');
     }
   }
 
@@ -529,6 +550,13 @@ export default function RecurringTicketsSettings() {
                 </p>
               </div>
 
+              <button
+                onClick={() => handleRunNow(r.id, r.name)}
+                className="rounded p-1.5 text-secondary transition hover:bg-emerald-500/20 hover:text-emerald-400"
+                title="Executar agora (teste)"
+              >
+                <Play size={14} />
+              </button>
               <button
                 onClick={() => openEdit(r)}
                 className="rounded p-1.5 text-secondary transition hover:bg-input/50 hover:text-primary"

@@ -33,12 +33,14 @@ function loadCronParser(): CronParserModule {
 
 /**
  * Calcula o próximo horário de execução para uma cron expression.
+ * Por padrão usa America/Sao_Paulo. Pode ser override via env CRON_TZ.
  * Lança Error com mensagem amigável se a expressão for inválida.
  */
 export function computeNextRunAt(cronExpression: string, from: Date = new Date()): Date {
   const parser = loadCronParser();
+  const tz = process.env.CRON_TZ || 'America/Sao_Paulo';
   try {
-    const interval = parser.parseExpression(cronExpression, { currentDate: from });
+    const interval = parser.parseExpression(cronExpression, { currentDate: from, tz });
     return interval.next().toDate();
   } catch (err) {
     throw new Error((err as Error).message || 'cron expression inválida');
