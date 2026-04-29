@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Repeat, Loader2, X, Play } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/Toast';
 
 interface RecurringTicket {
   id: string;
@@ -68,6 +70,8 @@ function formatDate(iso: string | null) {
 }
 
 export default function RecurringTicketsSettings() {
+  const { confirm } = useConfirm();
+  const { toast } = useToast();
   const [items, setItems] = useState<RecurringTicket[]>([]);
   const [projects, setProjects] = useState<SelectItem[]>([]);
   const [boards, setBoards] = useState<SelectItem[]>([]);
@@ -225,17 +229,31 @@ export default function RecurringTicketsSettings() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remover este recurring ticket?')) return;
+    const ok = await confirm({
+      title: 'Remover ticket recorrente',
+      message: 'Tem certeza? Os tickets já criados por ele permanecem; só para a criação automática.',
+      confirmText: 'Remover',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetch(`/api/recurring-tickets?id=${id}`, { method: 'DELETE' });
+      toast('Recorrente removido', 'success');
       fetchItems();
     } catch (err) {
       console.error('Erro ao remover:', err);
+      toast('Erro ao remover', 'error');
     }
   }
 
   async function handleRunNow(id: string, name: string) {
-    if (!confirm(`Criar ticket agora a partir de "${name}"? (Não altera o cron — só dispara uma execução manual de teste.)`)) return;
+    const ok = await confirm({
+      title: 'Executar agora',
+      message: `Criar ticket a partir de "${name}" agora? Não altera a programação — é só uma execução manual de teste.`,
+      confirmText: 'Criar ticket',
+      variant: 'info',
+    });
+    if (!ok) return;
     try {
       const res = await fetch('/api/recurring-tickets/run-now', {
         method: 'POST',
@@ -244,14 +262,15 @@ export default function RecurringTicketsSettings() {
       });
       if (res.ok) {
         const data = await res.json();
-        alert(`Ticket criado: "${data.title}". Veja no board.`);
+        const where = data.project_name ? ` em ${data.project_name}${data.board_name ? ` / ${data.board_name}` : ''}` : '';
+        toast(`${data.ticket_key ? `[${data.ticket_key}] ` : ''}Ticket "${data.title}" criado${where}`, 'success');
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(`Erro: ${err.error || 'falha ao executar'}`);
+        toast(err.error || 'Falha ao executar', 'error');
       }
     } catch (err) {
       console.error('Erro ao executar agora:', err);
-      alert('Erro de rede');
+      toast('Erro de rede', 'error');
     }
   }
 

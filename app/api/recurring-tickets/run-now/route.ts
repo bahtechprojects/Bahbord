@@ -76,7 +76,26 @@ export async function POST(request: Request) {
       ]
     );
 
-    return NextResponse.json({ ok: true, ticket_id: inserted.rows[0].id, title });
+    // Info adicional pra mostrar onde criou
+    const ctx = await query<{ project_name: string | null; board_name: string | null; ticket_key: string | null }>(
+      `SELECT p.name AS project_name, b.name AS board_name, tf.ticket_key
+       FROM tickets t
+       LEFT JOIN projects p ON p.id = t.project_id
+       LEFT JOIN boards b ON b.id = t.board_id
+       LEFT JOIN tickets_full tf ON tf.id = t.id
+       WHERE t.id = $1`,
+      [inserted.rows[0].id]
+    );
+    const info = ctx.rows[0] || {};
+
+    return NextResponse.json({
+      ok: true,
+      ticket_id: inserted.rows[0].id,
+      title,
+      project_name: info.project_name,
+      board_name: info.board_name,
+      ticket_key: info.ticket_key,
+    });
   } catch (err) {
     console.error('POST /api/recurring-tickets/run-now error:', err);
     return NextResponse.json(
