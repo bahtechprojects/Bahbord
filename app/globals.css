@@ -277,10 +277,16 @@ select option {
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .animate-slide-up { animation: slide-up 0.2s ease-out; }
 .animate-slide-down { animation: slide-down 0.15s ease-out; }
 .animate-fade-in { animation: fade-in 0.15s ease-out; }
 .animate-scale-in { animation: scale-in 0.15s ease-out; }
+.animate-slide-in-right { animation: slide-in-right 0.2s ease-out; }
 
 /* Premium glass effect */
 .glass {

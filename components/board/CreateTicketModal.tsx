@@ -61,6 +61,8 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
+    const [aiPriorityLoading, setAiPriorityLoading] = useState(false);
+    const [aiPriorityReasoning, setAiPriorityReasoning] = useState('');
 
     // Options from API
     const [members, setMembers] = useState<SelectItem[]>([]);
@@ -68,6 +70,22 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
     const [sprints, setSprints] = useState<SelectItem[]>([]);
     const [allServices, setAllServices] = useState<SelectItem[]>(initialServices);
     const [clients, setClients] = useState<SelectItem[]>([]);
+
+    // Templates de ticket (workspace-level)
+    interface TicketTemplate {
+      id: string;
+      name: string;
+      ticket_type_id: string | null;
+      title_template: string | null;
+      description_html: string | null;
+      priority: string | null;
+      service_id: string | null;
+      category_id: string | null;
+      subtasks: string[];
+    }
+    const [templates, setTemplates] = useState<TicketTemplate[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [pendingSubtasks, setPendingSubtasks] = useState<string[]>([]);
 
     useImperativeHandle(ref, () => ({
       open: (presetStatusId?: string) => {
@@ -181,10 +199,37 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
               }
             } catch {}
           }
+
+          // Carrega templates do workspace (silencioso se falhar)
+          try {
+            const tmplRes = await fetch('/api/ticket-templates');
+            if (tmplRes.ok) {
+              const tmplList = await tmplRes.json();
+              if (Array.isArray(tmplList)) setTemplates(tmplList);
+            }
+          } catch {}
         } catch (err) { console.error('Erro ao carregar opções:', err); }
       }
       load();
     }, [isOpen]);
+
+    // Aplicar template — preenche os campos a partir do template selecionado.
+    function applyTemplate(templateId: string) {
+      setSelectedTemplateId(templateId);
+      if (!templateId) {
+        setPendingSubtasks([]);
+        return;
+      }
+      const t = templates.find((x) => x.id === templateId);
+      if (!t) return;
+      if (t.title_template) setTitle(t.title_template);
+      if (t.description_html) setDescription(t.description_html);
+      if (t.priority) setPriority(t.priority);
+      if (t.ticket_type_id) setTicketTypeId(t.ticket_type_id);
+      if (t.service_id) setServiceId(t.service_id);
+      if (t.category_id) setCategoryId(t.category_id);
+      setPendingSubtasks(Array.isArray(t.subtasks) ? t.subtasks : []);
+    }
 
     // Set template when type changes
     const selectedType = initialTicketTypes.find((t) => t.id === ticketTypeId);
@@ -239,12 +284,29 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
           return;
         }
 
+        // Cria as subtasks vindas do template (se houver). Falha silenciosa
+        // pra não bloquear o fluxo — o ticket já foi criado.
+        const ticketCreated = await response.json().catch(() => null);
+        if (ticketCreated?.id && pendingSubtasks.length > 0) {
+          await Promise.all(
+            pendingSubtasks.map((st) =>
+              fetch('/api/subtasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticket_id: ticketCreated.id, title: st }),
+              }).catch(() => null)
+            )
+          );
+        }
+
         toast('Ticket criado com sucesso', 'success');
 
         if (createAnother) {
           setTitle('');
           setDescription(descriptionTemplates[typeName] || '');
           setError('');
+          setPendingSubtasks([]);
+          setSelectedTemplateId('');
         } else {
           resetForm();
           setIsOpen(false);
@@ -269,6 +331,8 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
       setSprintId('');
       setClientId('');
       setError('');
+      setPendingSubtasks([]);
+      setSelectedTemplateId('');
     }
 
     const activeSprint = sprints.find((s: any) => s.is_active);
@@ -323,6 +387,28 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
                   )}
 
                   <p className="text-[11px] text-secondary">Os campos obrigatórios estão marcados com asterisco <span className="text-[var(--danger)]">*</span></p>
+
+                  {/* Aplicar template */}
+                  {templates.length > 0 && (
+                    <div>
+                      <label className={labelClass}>Aplicar template</label>
+                      <select
+                        value={selectedTemplateId}
+                        onChange={(e) => applyTemplate(e.target.value)}
+                        className={selectClass}
+                      >
+                        <option value="">— sem template —</option>
+                        {templates.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      {pendingSubtasks.length > 0 && (
+                        <p className="mt-1 text-[11px] text-secondary">
+                          {pendingSubtasks.length} subtask{pendingSubtasks.length > 1 ? 's' : ''} ser{pendingSubtasks.length > 1 ? 'ão' : 'á'} criada{pendingSubtasks.length > 1 ? 's' : ''} ao salvar.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Espaço */}
                   <div>
@@ -487,10 +573,61 @@ const CreateTicketModal = forwardRef<CreateTicketModalRef, CreateTicketModalProp
 
                   {/* Prioridade */}
                   <div>
-                    <label className={labelClass}>Prioridade</label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className={labelClass + ' mb-0'}>Prioridade</label>
+                      <button
+                        type="button"
+                        title="Sugerir com IA"
+                        aria-label="Sugerir prioridade com IA"
+                        onClick={async () => {
+                          if (!title.trim()) {
+                            toast('Digite o título primeiro', 'error');
+                            return;
+                          }
+                          setAiPriorityLoading(true);
+                          setAiPriorityReasoning('');
+                          try {
+                            const res = await fetch('/api/ai/suggest-priority', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ title, description }),
+                            });
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}));
+                              toast(data?.error || 'Erro ao sugerir prioridade', 'error');
+                              return;
+                            }
+                            const data = await res.json();
+                            if (data?.priority) {
+                              setPriority(data.priority);
+                              setAiPriorityReasoning(data.reasoning || '');
+                              toast('Prioridade sugerida pela IA', 'success');
+                            }
+                          } catch {
+                            toast('Erro de conexão ao sugerir prioridade', 'error');
+                          } finally {
+                            setAiPriorityLoading(false);
+                          }
+                        }}
+                        disabled={aiPriorityLoading}
+                        className="flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 disabled:opacity-50"
+                      >
+                        <Sparkles size={12} className={aiPriorityLoading ? 'animate-pulse' : ''} />
+                        {aiPriorityLoading ? 'Analisando...' : 'Sugerir com IA'}
+                      </button>
+                    </div>
                     <select value={priority} onChange={(e) => setPriority(e.target.value)} className={selectClass}>
                       {priorityOptions.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
+                    {aiPriorityReasoning && (
+                      <div className="mt-2 rounded-md border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 px-3 py-2">
+                        <div className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                          <Sparkles size={10} />
+                          Sugestão da IA
+                        </div>
+                        <p className="text-[12px] leading-relaxed text-slate-200">{aiPriorityReasoning}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

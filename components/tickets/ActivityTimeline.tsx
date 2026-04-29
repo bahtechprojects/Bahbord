@@ -287,6 +287,23 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
           <>
             {comments.length > 0 && (
               <div className="pb-3 pt-1">
+                {/* Auto CTA: only when long thread and no summary yet */}
+                {comments.length >= 5 && !aiSummary && !aiSummaryLoading && (
+                  <button
+                    type="button"
+                    onClick={handleSummarizeThread}
+                    className="mb-2 flex w-full items-center justify-between gap-3 rounded-lg border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 px-3.5 py-2.5 text-left transition hover:from-violet-500/15 hover:to-fuchsia-500/10"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={14} className="text-violet-300" />
+                      <div>
+                        <div className="text-[12.5px] font-semibold text-violet-200">Quer um resumo deste thread?</div>
+                        <div className="text-[11px] text-slate-400">{comments.length} comentários — a IA pode resumir decisões e próximos passos</div>
+                      </div>
+                    </div>
+                    <span className="rounded-md bg-violet-500/20 px-2 py-1 text-[11px] font-medium text-violet-200">Resumir</span>
+                  </button>
+                )}
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -295,7 +312,7 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
                     className="flex items-center gap-1.5 rounded-md border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-300 transition hover:bg-violet-500/15 hover:text-violet-200 disabled:opacity-50"
                   >
                     <Sparkles size={12} className={aiSummaryLoading ? 'animate-pulse' : ''} />
-                    {aiSummaryLoading ? 'Resumindo...' : 'Resumir thread com IA'}
+                    {aiSummaryLoading ? 'Resumindo...' : aiSummary ? 'Regerar resumo' : 'Resumir thread com IA'}
                   </button>
                   {aiSummary && (
                     <button
@@ -303,12 +320,25 @@ export default function ActivityTimeline({ ticketId }: ActivityTimelineProps) {
                       onClick={() => setAiSummary(null)}
                       className="text-[11px] text-slate-500 hover:text-slate-300"
                     >
-                      Limpar resumo
+                      Fechar resumo
                     </button>
                   )}
                 </div>
                 {aiSummaryError && (
                   <p className="mt-2 text-[12px] text-red-400">{aiSummaryError}</p>
+                )}
+                {aiSummaryLoading && !aiSummary && (
+                  <div className="mt-2 rounded-lg border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 px-3.5 py-3 animate-pulse">
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-300">
+                      <Sparkles size={11} />
+                      Gerando resumo...
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="h-2 w-full rounded bg-violet-500/15" />
+                      <div className="h-2 w-5/6 rounded bg-violet-500/15" />
+                      <div className="h-2 w-3/4 rounded bg-violet-500/15" />
+                    </div>
+                  </div>
                 )}
                 {aiSummary && (
                   <div className="mt-2 rounded-lg border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 px-3.5 py-3">

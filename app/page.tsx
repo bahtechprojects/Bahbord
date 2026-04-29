@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ViewTabsWrapper from '@/components/layout/ViewTabsWrapper';
@@ -8,12 +9,36 @@ import ProjectFilter from '@/components/dashboard/ProjectFilter';
 import Sparkline from '@/components/dashboard/Sparkline';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import ApprovalGate from '@/components/ui/ApprovalGate';
-import { query } from '@/lib/db';
+import { query, getDefaultWorkspaceId } from '@/lib/db';
 import { requireAdmin } from '@/lib/page-guards';
 
 export default async function HomePage({ searchParams }: { searchParams: { project_id?: string; board_id?: string } }) {
   // Dashboard global é admin-only (membros são redirecionados pra /my-tasks)
-  await requireAdmin();
+  const auth = await requireAdmin();
+
+  // Fresh workspace? Manda o owner pro wizard de onboarding.
+  // Garante a coluna onboarded_at (idempotente; migration 043 faz isso também)
+  // pra evitar erro caso a migration ainda não tenha rodado em ambientes legados.
+  await query(`ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ`).catch(() => {});
+  try {
+    const wsId = auth.workspace_id || (await getDefaultWorkspaceId());
+    const fresh = await query<{ projects: number; members: number; onboarded: boolean | null }>(
+      `SELECT (SELECT COUNT(*) FROM projects WHERE workspace_id = $1)::int AS projects,
+              (SELECT COUNT(*) FROM members WHERE workspace_id = $1 AND is_approved = true)::int AS members,
+              (SELECT onboarded_at IS NOT NULL FROM workspaces WHERE id = $1) AS onboarded`,
+      [wsId]
+    );
+    const row = fresh.rows[0];
+    if (row && row.projects === 0 && row.onboarded !== true) {
+      redirect('/onboarding');
+    }
+  } catch (err) {
+    // NEXT_REDIRECT precisa propagar; só silencia erros reais de DB.
+    if (err && typeof err === 'object' && 'digest' in err && typeof (err as { digest?: string }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
+      throw err;
+    }
+    console.error('Dashboard fresh-workspace check failed:', err);
+  }
 
   const sp = await searchParams;
   let project_id = sp.project_id;

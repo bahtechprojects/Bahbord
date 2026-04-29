@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation';
 
 const shortcuts = [
   { key: 'g d', label: 'Dashboard', route: '/' },
+  { key: 'g i', label: 'Caixa de entrada', route: '/inbox' },
+  { key: 'g m', label: 'Minhas tarefas', route: '/my-tasks' },
+  { key: 'g w', label: 'Esta semana', route: '/this-week' },
   { key: 'g b', label: 'Board', route: '/board' },
   { key: 'g l', label: 'Lista', route: '/list' },
   { key: 'g k', label: 'Backlog', route: '/backlog' },
   { key: 'g s', label: 'Sprints', route: '/sprints' },
   { key: 'g t', label: 'Cronograma', route: '/timeline' },
+  { key: 'g c', label: 'Calendário', route: '/calendar' },
   { key: 'g h', label: 'Timesheet', route: '/timesheet' },
   { key: 'g ,', label: 'Configurações', route: '/settings' },
   { key: '?', label: 'Mostrar atalhos', route: null },
@@ -57,11 +61,15 @@ export default function KeyboardShortcuts() {
 
         const routeMap: Record<string, string> = {
           d: '/',
+          i: '/inbox',
+          m: '/my-tasks',
+          w: '/this-week',
           b: '/board',
           l: '/list',
           k: '/backlog',
           s: '/sprints',
           t: '/timeline',
+          c: '/calendar',
           h: '/timesheet',
           ',': '/settings',
         };

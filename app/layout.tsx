@@ -8,6 +8,7 @@ import { ConfirmProvider } from '@/components/ui/ConfirmModal';
 // import SearchModal from '@/components/ui/SearchModal'; // fallback - substituído por CommandPalette
 import CommandPalette from '@/components/ui/CommandPalette';
 import KeyboardShortcuts from '@/components/ui/KeyboardShortcuts';
+import AIChat from '@/components/ui/AIChat';
 import './globals.css';
 
 const inter = Inter({
@@ -27,9 +28,19 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: 'Bah!Flow',
   description: 'Bah!Flow — gestão de projetos editorial',
+  manifest: '/manifest.json',
+  themeColor: '#3b6cf5',
+  appleWebApp: {
+    capable: true,
+    title: 'Bah!Flow',
+    statusBarStyle: 'black-translucent',
+  },
   icons: {
     icon: [
       { url: '/bahflow-favicon-dark.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/bahflow-favicon-dark.svg' },
     ],
   },
 };
@@ -48,6 +59,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <html lang="pt-BR" className={`${inter.variable} ${newsreader.variable}`} suppressHydrationWarning>
         <head>
+          <link rel="manifest" href="/manifest.json" />
+          <link rel="apple-touch-icon" href="/bahflow-favicon-dark.svg" />
+          <meta name="theme-color" content="#3b6cf5" />
           <script dangerouslySetInnerHTML={{ __html: `
             (function(){
               try {
@@ -57,6 +71,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 else { document.documentElement.classList.remove('dark'); document.documentElement.style.colorScheme = 'light'; }
               } catch(e) { document.documentElement.classList.add('dark'); }
             })();
+          `}} />
+          <script dangerouslySetInnerHTML={{ __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                  console.warn('SW registration failed:', err);
+                });
+              });
+            }
           `}} />
         </head>
         <body>
@@ -68,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {/* <SearchModal /> */}
                   <CommandPalette />
                   <KeyboardShortcuts />
+                  <AIChat />
                 </ConfirmProvider>
               </ToastProvider>
             </ProjectProvider>

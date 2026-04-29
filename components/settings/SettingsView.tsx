@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Users, Building2, Columns3, Tag, Layers, Type, Smile, Shield, ClipboardCheck, Webhook, Link2, MessageCircle, Zap, Share2, FileSearch } from 'lucide-react';
+import { Settings, Users, Building2, Columns3, Tag, Layers, Type, Smile, Shield, ClipboardCheck, Webhook, Link2, MessageCircle, Zap, Share2, FileSearch, FileText, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import GeneralSettings from './GeneralSettings';
 import MembersSettings from './MembersSettings';
@@ -19,8 +19,10 @@ import ApprovalsSettings from './ApprovalsSettings';
 import AutomationsSettings from './AutomationsSettings';
 import ShareLinksSettings from './ShareLinksSettings';
 import AuditSettings from './AuditSettings';
+import TicketTemplatesSettings from './TicketTemplatesSettings';
+import RecurringTicketsSettings from './RecurringTicketsSettings';
 
-type SettingsTab = 'general' | 'clients' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'reactions' | 'permissions' | 'approvals' | 'share' | 'audit' | 'automations' | 'webhooks' | 'clockify' | 'whatsapp';
+type SettingsTab = 'general' | 'clients' | 'members' | 'statuses' | 'services' | 'categories' | 'ticket_types' | 'ticket_templates' | 'reactions' | 'permissions' | 'approvals' | 'share' | 'audit' | 'automations' | 'recurring' | 'webhooks' | 'clockify' | 'whatsapp';
 
 const tabs: { key: SettingsTab; label: string; icon: React.ElementType; section?: string }[] = [
   { key: 'general', label: 'Geral', icon: Settings },
@@ -30,12 +32,14 @@ const tabs: { key: SettingsTab; label: string; icon: React.ElementType; section?
   { key: 'services', label: 'Serviços/Produtos', icon: Tag },
   { key: 'categories', label: 'Categorias', icon: Layers },
   { key: 'ticket_types', label: 'Tipos de ticket', icon: Type },
+  { key: 'ticket_templates', label: 'Templates de ticket', icon: FileText },
   { key: 'reactions', label: 'Reações rápidas', icon: Smile },
   { key: 'permissions', label: 'Permissões', icon: Shield, section: 'Segurança' },
   { key: 'approvals', label: 'Aprovações', icon: ClipboardCheck, section: 'Segurança' },
   { key: 'share', label: 'Compartilhar', icon: Share2, section: 'Segurança' },
   { key: 'audit', label: 'Auditoria', icon: FileSearch, section: 'Segurança' },
   { key: 'automations', label: 'Automações', icon: Zap, section: 'Automações' },
+  { key: 'recurring', label: 'Tickets recorrentes', icon: Repeat, section: 'Automações' },
   { key: 'webhooks', label: 'Webhooks', icon: Webhook, section: 'Integrações' },
   { key: 'clockify', label: 'Clockify', icon: Link2, section: 'Integrações' },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, section: 'Integrações' },
@@ -93,12 +97,14 @@ export default function SettingsView() {
           {activeTab === 'services' && <ServicesSettings />}
           {activeTab === 'categories' && <CategoriesSettings />}
           {activeTab === 'ticket_types' && <TicketTypesSettings />}
+          {activeTab === 'ticket_templates' && <TicketTemplatesSettings />}
           {activeTab === 'reactions' && <QuickReactionsSettings />}
           {activeTab === 'permissions' && <PermissionsSettings />}
           {activeTab === 'approvals' && <ApprovalsSettings />}
           {activeTab === 'share' && <ShareLinksSettings />}
           {activeTab === 'audit' && <AuditSettings />}
           {activeTab === 'automations' && <AutomationsSettings />}
+          {activeTab === 'recurring' && <RecurringTicketsSettings />}
           {activeTab === 'webhooks' && <WebhookSettings />}
           {activeTab === 'clockify' && <ClockifySettings />}
           {activeTab === 'whatsapp' && <WhatsAppSettings />}

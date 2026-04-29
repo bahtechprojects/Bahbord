@@ -18,6 +18,7 @@ const pageTitles: Record<string, string> = {
   '/backlog': 'Backlog',
   '/sprints': 'Sprints',
   '/timeline': 'Cronograma',
+  '/calendar': 'Calendário',
   '/timesheet': 'Time',
   '/settings': 'Configurações',
   '/docs': 'Documentação',
@@ -91,11 +92,11 @@ export default function Header({ onCreateTicket }: HeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center gap-1.5">
-        {/* Pergunta pra IA */}
+        {/* Pergunta pra IA — abre chat lateral */}
         <button
-          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('ai-chat:toggle'))}
           className="hidden md:flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] text-secondary transition hover:bg-[var(--overlay-hover)] hover:text-primary"
-          title="Pergunta pra IA (⌘K)"
+          title="Pergunta pra IA"
         >
           <Sparkles size={13} strokeWidth={1.75} />
           <span>Pergunta pra IA</span>

@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Columns3, List, Inbox, Zap, CalendarDays, Clock, LayoutDashboard } from 'lucide-react';
+import { Columns3, List, Inbox, Zap, CalendarDays, Clock, LayoutDashboard, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const tabs = [
@@ -12,6 +12,7 @@ const tabs = [
   { href: '/backlog', label: 'Backlog', icon: Inbox },
   { href: '/sprints', label: 'Sprints', icon: Zap, adminOnly: true },
   { href: '/timeline', label: 'Cronograma', icon: CalendarDays, adminOnly: true },
+  { href: '/calendar', label: 'Calendário', icon: Calendar, adminOnly: true },
   { href: '/timesheet', label: 'Timesheet', icon: Clock, adminOnly: true },
 ];
 

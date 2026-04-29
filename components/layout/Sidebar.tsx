@@ -249,6 +249,7 @@ export default function Sidebar() {
             <div className="space-y-0.5">
               <NavItem href="/boards" label="Boards" icon={Columns3} />
               <NavItem href="/sprints" label="Sprints" icon={Zap} />
+              <NavItem href="/calendar" label="Calendário" icon={Calendar} />
               <NavItem href="/timesheet" label="Time" icon={Clock} />
               <NavItem href="/clients" label="Clientes" icon={Users} />
               <NavItem href="/teams" label="Equipes" icon={Users} />
