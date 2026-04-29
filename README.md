@@ -24,7 +24,7 @@ Sistema de gestão de projetos profissional construído com Next.js 14, Clerk, P
 - PostgreSQL
 - Clerk (auth)
 - Supabase (realtime)
-- Anthropic Claude (AI)
+- OpenAI GPT-4.1-mini (AI)
 - Google Drive (file uploads)
 
 ## Setup local

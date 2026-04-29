@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { query } from '@/lib/db';
 import { getAuthMember, isAdmin } from '@/lib/api-auth';
 import { checkRateLimit } from '@/lib/rate-limit';
+
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 
 /**
  * POST /api/ai/chat
@@ -23,8 +25,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Muitas requisições. Aguarde.' }, { status: 429 });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({ error: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 });
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY não configurada' }, { status: 500 });
     }
 
     const { message, history = [] } = await request.json();
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'message obrigatório' }, { status: 400 });
     }
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const systemPrompt = `Você é um assistente do Bah!Flow (sistema de gestão de projetos). O admin pode te perguntar sobre os dados do workspace e você responde executando SQL no banco Postgres.
 
@@ -51,22 +53,22 @@ Schema relevante:
 - sprints: id, name, project_id, is_active, start_date, end_date
 - statuses: id, name, color, is_done, position`;
 
-    const messages: { role: 'user' | 'assistant'; content: string }[] = [
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+      { role: 'system', content: systemPrompt },
       ...history.slice(-10).map((h: { role: string; content: string }) => ({
-        role: h.role === 'user' ? ('user' as const) : ('assistant' as const),
+        role: (h.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: h.content,
       })),
       { role: 'user', content: message },
     ];
 
-    const completion = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const completion = await openai.chat.completions.create({
+      model: MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
       messages,
     });
 
-    const aiText = completion.content[0]?.type === 'text' ? completion.content[0].text : '';
+    const aiText = completion.choices[0]?.message?.content || '';
 
     // Tenta parsear JSON com SQL
     const jsonMatch = aiText.match(/\{[\s\S]*"sql"[\s\S]*\}/);
