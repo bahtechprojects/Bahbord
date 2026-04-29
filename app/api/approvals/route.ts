@@ -78,7 +78,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, action, reviewer_note, board_id, project_id, role: assignRole } = body;
+    const { id, action, reviewer_note, board_id, project_id, role: assignRole, projects: multiProjects } = body;
     const reviewer_id = auth.id;
 
     if (!id || !action || !['approve', 'reject'].includes(action)) {
@@ -221,6 +221,20 @@ export async function PATCH(request: Request) {
         console.error('[approvals] falha ao preparar welcome email:', emailErr);
       }
 
+      // Multi-projects: array [{ project_id, role }]
+      if (Array.isArray(multiProjects) && multiProjects.length > 0) {
+        for (const p of multiProjects) {
+          if (!p?.project_id) continue;
+          const role = ['owner', 'admin', 'member', 'viewer'].includes(p.role) ? p.role : 'member';
+          await query(
+            `INSERT INTO project_roles (project_id, member_id, role)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (project_id, member_id) DO UPDATE SET role = $3`,
+            [p.project_id, approval.requester_id, role]
+          );
+        }
+      }
+
       // Também dar acesso a um board específico se informado
       if (board_id) {
         await query(
@@ -240,7 +254,7 @@ export async function PATCH(request: Request) {
           );
         }
       }
-      // Ou acesso a um projeto inteiro
+      // Ou acesso a um projeto inteiro (legado, single)
       else if (project_id) {
         await query(
           `INSERT INTO project_roles (project_id, member_id, role)

@@ -38,7 +38,7 @@ export default function ApprovalsSettings() {
   const [filter, setFilter] = useState<StatusFilter>('pending');
   const [projects, setProjects] = useState<Array<{ id: string; name: string; prefix: string }>>([]);
   const [boards, setBoards] = useState<Array<{ id: string; name: string; project_id: string }>>([]);
-  const [approvalConfig, setApprovalConfig] = useState<Record<string, { board_id?: string; project_id?: string; role?: string }>>({});
+  const [approvalConfig, setApprovalConfig] = useState<Record<string, { board_id?: string; project_id?: string; role?: string; projects?: Array<{ project_id: string; role: string }> }>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -61,6 +61,41 @@ export default function ApprovalsSettings() {
     fetch('/api/projects').then((r) => r.json()).then(setProjects).catch(() => {});
     fetch('/api/options?type=boards').then((r) => r.json()).then(setBoards).catch(() => {});
   }, []);
+
+  function addProjectToApproval(approvalId: string, projectId: string) {
+    if (!projectId) return;
+    setApprovalConfig((prev) => {
+      const current = prev[approvalId]?.projects || [];
+      if (current.find((p) => p.project_id === projectId)) return prev;
+      return {
+        ...prev,
+        [approvalId]: { ...prev[approvalId], projects: [...current, { project_id: projectId, role: 'member' }] },
+      };
+    });
+  }
+
+  function removeProjectFromApproval(approvalId: string, projectId: string) {
+    setApprovalConfig((prev) => {
+      const current = prev[approvalId]?.projects || [];
+      return {
+        ...prev,
+        [approvalId]: { ...prev[approvalId], projects: current.filter((p) => p.project_id !== projectId) },
+      };
+    });
+  }
+
+  function changeProjectRole(approvalId: string, projectId: string, role: string) {
+    setApprovalConfig((prev) => {
+      const current = prev[approvalId]?.projects || [];
+      return {
+        ...prev,
+        [approvalId]: {
+          ...prev[approvalId],
+          projects: current.map((p) => (p.project_id === projectId ? { ...p, role } : p)),
+        },
+      };
+    });
+  }
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -295,15 +330,68 @@ export default function ApprovalsSettings() {
                 {/* Action buttons + assignment (only for pending) */}
                 {r.status === 'pending' && (
                   <div className="shrink-0 space-y-2">
-                    {/* Seletor de board/projeto para direcionar acesso */}
-                    {(r.type === 'board_access' || r.type === 'org_access') && (
+                    {/* Multi-projetos pra org_access */}
+                    {r.type === 'org_access' && (
+                      <div className="space-y-1.5 min-w-[280px]">
+                        <p className="text-[10px] uppercase tracking-wider text-secondary">Atribuir a projetos (opcional)</p>
+                        {(approvalConfig[r.id]?.projects || []).map((pj) => {
+                          const proj = projects.find((p) => p.id === pj.project_id);
+                          return (
+                            <div key={pj.project_id} className="flex items-center gap-1 rounded border border-[var(--card-border)] bg-[var(--overlay-subtle)] px-2 py-1">
+                              <span className="flex-1 truncate text-[11px] text-primary">{proj?.prefix} · {proj?.name}</span>
+                              <select
+                                value={pj.role}
+                                onChange={(e) => changeProjectRole(r.id, pj.project_id, e.target.value)}
+                                className="rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-1.5 py-0.5 text-[10px] text-primary outline-none"
+                              >
+                                <option value="viewer">Viewer</option>
+                                <option value="member">Member</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                              <button
+                                onClick={() => removeProjectFromApproval(r.id, pj.project_id)}
+                                className="rounded p-0.5 text-secondary hover:bg-[var(--overlay-hover)] hover:text-[var(--danger)]"
+                                aria-label="Remover"
+                                title="Remover"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        <select
+                          value=""
+                          onChange={(e) => addProjectToApproval(r.id, e.target.value)}
+                          className="w-full rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-secondary outline-none"
+                        >
+                          <option value="">+ Adicionar projeto…</option>
+                          {projects
+                            .filter((p) => !(approvalConfig[r.id]?.projects || []).find((pj) => pj.project_id === p.id))
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>{p.prefix} — {p.name}</option>
+                            ))}
+                        </select>
+                        <select
+                          value={approvalConfig[r.id]?.role || 'member'}
+                          onChange={(e) => setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], role: e.target.value } }))}
+                          className="w-full rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-primary outline-none"
+                        >
+                          <option value="member">Role na org: Member</option>
+                          <option value="admin">Role na org: Admin</option>
+                          <option value="viewer">Role na org: Viewer</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Pra board_access manter o seletor antigo (single board) */}
+                    {r.type === 'board_access' && (
                       <div className="space-y-1">
                         <select
                           value={approvalConfig[r.id]?.project_id || ''}
                           onChange={(e) => {
                             setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], project_id: e.target.value, board_id: '' } }));
                           }}
-                          className="w-full rounded border border-white/[0.08] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                          className="w-full rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-primary outline-none"
                         >
                           <option value="">Selecionar projeto...</option>
                           {projects.map((p) => <option key={p.id} value={p.id}>{p.prefix} - {p.name}</option>)}
@@ -312,7 +400,7 @@ export default function ApprovalsSettings() {
                           <select
                             value={approvalConfig[r.id]?.board_id || ''}
                             onChange={(e) => setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], board_id: e.target.value } }))}
-                            className="w-full rounded border border-white/[0.08] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                            className="w-full rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-primary outline-none"
                           >
                             <option value="">Selecionar board...</option>
                             {boards.filter((b) => b.project_id === approvalConfig[r.id]?.project_id).map((b) => (
@@ -323,11 +411,11 @@ export default function ApprovalsSettings() {
                         <select
                           value={approvalConfig[r.id]?.role || 'viewer'}
                           onChange={(e) => setApprovalConfig((prev) => ({ ...prev, [r.id]: { ...prev[r.id], role: e.target.value } }))}
-                          className="w-full rounded border border-white/[0.08] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-slate-300 outline-none"
+                          className="w-full rounded border border-[var(--card-border)] bg-[var(--modal-bg)] px-2 py-1 text-[11px] text-primary outline-none"
                         >
-                          <option value="viewer">Viewer (somente leitura)</option>
-                          <option value="member">Member (criar tickets)</option>
-                          <option value="admin">Admin (gerenciar)</option>
+                          <option value="viewer">Viewer</option>
+                          <option value="member">Member</option>
+                          <option value="admin">Admin</option>
                         </select>
                       </div>
                     )}
