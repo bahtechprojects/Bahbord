@@ -1,4 +1,5 @@
 FROM node:20-alpine AS base
+# build-rev: 2026-05-11-r2 (force cache invalidation)
 
 # Dependencies
 FROM base AS deps
