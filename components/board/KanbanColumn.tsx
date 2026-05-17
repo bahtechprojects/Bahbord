@@ -1,11 +1,12 @@
 'use client';
 
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils/cn';
 import TicketCard from './TicketCard';
 import { useBoardShell } from './BoardShell';
-import { Plus } from 'lucide-react';
+import { GripVertical, Plus } from 'lucide-react';
 
 interface ColumnCard {
   id: string;
@@ -35,24 +36,59 @@ interface ColumnProps {
   wipLimit?: number | null;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
+  sortableColumn?: boolean;
 }
 
-export default function KanbanColumn({ id, title, color, cards, activeItemId, onSelectCard, wipLimit, selectedIds, onToggleSelect }: ColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+export default function KanbanColumn({ id, title, color, cards, activeItemId, onSelectCard, wipLimit, selectedIds, onToggleSelect, sortableColumn }: ColumnProps) {
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id });
   const { createInColumn } = useBoardShell();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+    data: { type: 'column' },
+    disabled: !sortableColumn,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <section
-      ref={setNodeRef}
+      ref={(node) => {
+        setSortableRef(node);
+        setDropRef(node);
+      }}
+      style={style}
       aria-label={`Coluna ${title} - ${cards.length} tickets`}
       className={cn(
         'flex min-h-0 flex-col transition-all duration-200',
-        isOver && 'bg-blue-500/[0.03] rounded-lg'
+        isOver && 'bg-blue-500/[0.03] rounded-lg',
+        isDragging && 'opacity-40'
       )}
     >
-      {/* Header */}
+      {/* Header — drag handle na esquerda */}
       <div className="mb-2 flex items-center justify-between px-0.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {sortableColumn && (
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab rounded p-0.5 text-tertiary-muted transition hover:bg-[var(--overlay-hover)] hover:text-secondary-muted active:cursor-grabbing"
+              title="Arrastar para reordenar coluna"
+              aria-label={`Reordenar coluna ${title}`}
+            >
+              <GripVertical size={13} />
+            </button>
+          )}
           <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: color }} />
           <span className="text-[11px] font-semibold uppercase tracking-wider text-secondary-muted">{title}</span>
           <span className={cn('text-[11px] font-semibold tabular-nums', wipLimit && cards.length >= wipLimit ? 'text-amber-400' : 'text-tertiary-muted')}>

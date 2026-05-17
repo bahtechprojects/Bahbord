@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners, DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import KanbanColumn from './KanbanColumn';
 import TicketCard from './TicketCard';
 import BoardFilters from './BoardFilters';
@@ -29,15 +30,75 @@ export default function KanbanBoard({ initialItems, columns, wipLimits = {}, ava
     filters,
     setFilters,
     filterTickets,
-    handleDragStart,
-    handleDragOver,
-    handleDragEnd,
+    handleDragStart: handleCardDragStart,
+    handleDragOver: handleCardDragOver,
+    handleDragEnd: handleCardDragEnd,
     allTickets,
     overdueCount,
   } = useBoard(initialItems, wipLimits);
 
+  const [orderedColumns, setOrderedColumns] = useState(columns);
+  const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null);
+
+  // Sync columns when server data changes
+  useEffect(() => {
+    setOrderedColumns(columns);
+  }, [columns]);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const { createInColumn } = useBoardShell();
+
+  // Detect if a drag involves a column (id matches a column id)
+  const isColumnDrag = useCallback((id: string) => {
+    return orderedColumns.some((col) => col.id === id);
+  }, [orderedColumns]);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const activeId = event.active.id as string;
+    if (event.active.data.current?.type === 'column') {
+      setDraggingColumnId(activeId);
+    } else {
+      handleCardDragStart(event);
+    }
+  }, [handleCardDragStart]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    if (draggingColumnId) return; // Column drag doesn't need dragOver
+    handleCardDragOver(event);
+  }, [draggingColumnId, handleCardDragOver]);
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    if (draggingColumnId) {
+      setDraggingColumnId(null);
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = orderedColumns.findIndex((col) => col.id === active.id);
+      const newIndex = orderedColumns.findIndex((col) => col.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(orderedColumns, oldIndex, newIndex);
+      setOrderedColumns(reordered);
+
+      // Persist new positions to API
+      try {
+        await Promise.all(
+          reordered.map((col, idx) =>
+            fetch('/api/settings', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ table: 'statuses', id: col.id, position: idx }),
+            })
+          )
+        );
+      } catch {
+        // Revert on failure
+        setOrderedColumns(orderedColumns);
+      }
+      return;
+    }
+    handleCardDragEnd(event);
+  }, [draggingColumnId, orderedColumns, handleCardDragEnd]);
 
   // Bulk selection (Cmd/Ctrl+Click no card)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -136,34 +197,42 @@ export default function KanbanBoard({ initialItems, columns, wipLimits = {}, ava
         onDragEnd={handleDragEnd}
         autoScroll={{
           enabled: true,
-          // Aciona scroll quando o cursor está em 25% da borda (vertical e horizontal)
           threshold: { x: 0.15, y: 0.25 },
           acceleration: 12,
           interval: 5,
         }}
       >
-        {/* Mobile: scroll horizontal com snap; Desktop: layout natural */}
-        <div className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-2 px-2 sm:mx-0 sm:px-0">
-          {columns.map((column) => (
-            <div key={column.id} className="w-[85vw] max-w-[280px] sm:w-[260px] shrink-0 snap-start">
-              <KanbanColumn
-                id={column.id}
-                title={column.title}
-                color={column.color}
-                cards={filterTickets(items[column.id] ?? [])}
-                activeItemId={selectedCard}
-                onSelectCard={setSelectedCard}
-                wipLimit={wipLimits[column.id] ?? null}
-                selectedIds={selectedIds}
-                onToggleSelect={toggleSelect}
-              />
-            </div>
-          ))}
-        </div>
+        <SortableContext items={orderedColumns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+          {/* Mobile: scroll horizontal com snap; Desktop: layout natural */}
+          <div className="flex gap-3 pb-2 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-2 px-2 sm:mx-0 sm:px-0">
+            {orderedColumns.map((column) => (
+              <div key={column.id} className="w-[85vw] max-w-[280px] sm:w-[260px] shrink-0 snap-start">
+                <KanbanColumn
+                  id={column.id}
+                  title={column.title}
+                  color={column.color}
+                  cards={filterTickets(items[column.id] ?? [])}
+                  activeItemId={selectedCard}
+                  onSelectCard={setSelectedCard}
+                  wipLimit={wipLimits[column.id] ?? null}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
+                  sortableColumn
+                />
+              </div>
+            ))}
+          </div>
+        </SortableContext>
 
         {/* Drag overlay — mostra uma cópia fluida do card durante o arraste */}
         <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
-          {activeCard ? (
+          {draggingColumnId ? (
+            <div className="w-[260px] rounded-lg border border-[var(--card-border)] bg-[var(--bg-primary)] p-3 opacity-90 shadow-lg">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-secondary-muted">
+                {orderedColumns.find((c) => c.id === draggingColumnId)?.title}
+              </span>
+            </div>
+          ) : activeCard ? (
             <div className="w-[220px] rotate-2 opacity-90">
               <TicketCard
                 {...activeCard}
